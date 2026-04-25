@@ -7,6 +7,7 @@ import { Avatar } from '@/Components/ui/Avatar'
 import { NotificationBell } from '@/Components/shared/NotificationBell'
 import { RoleBadge } from '@/Components/shared/RoleBadge'
 import { UserRole } from '@/types/auth.types'
+import { ThemeToggle } from '@/Components/ui/ThemeToggle'
 
 export interface TopbarProps {
   title?: string
@@ -55,6 +56,9 @@ export const Topbar = ({ title, className }: TopbarProps) => {
             <Command size={10} />K
           </kbd>
         </button>
+
+        {/* Notifications */}
+        <ThemeToggle />
 
         {/* Notifications */}
         <NotificationBell />

@@ -83,26 +83,58 @@
 	--heatmap-overlay: rgba(244, 91, 91, 0.3);
 	--ring: rgba(106, 124, 255, 0.55);
 	--ring-weak: rgba(106, 124, 255, 0.22);
+
+	/* Gradient Colors */
+	--grad-1: rgba(106, 124, 255, 0.12);
+	--grad-2: rgba(90, 167, 255, 0.08);
+	--grad-3: rgba(255, 154, 92, 0.06);
 }
 
-/* * {
-	box-sizing: border-box;
-	margin: 0;
-	padding: 0;
+/* ─── Light theme ──────────────────────────────────────────────────────────── */
+.light, [data-theme='light'] {
+	--bg-base: #F4F6FB;
+	--bg-surface: #FFFFFF;
+	--bg-elevated: #EEF1F8;
+	--bg-subtle: #E3E8F3;
+
+	--accent: #4F5FE8;
+	--accent-glow: rgba(79, 95, 232, 0.14);
+	--success: #2E7ECC;
+	--sev-critical: #D63B3B;
+	--sev-high: #D97A30;
+	--sev-medium: #B89000;
+	--sev-low: #2E7ECC;
+	--sev-none: #8A94A6;
+
+	--text-primary: #0F1523;
+	--text-secondary: #374163;
+	--text-muted: #6271A0;
+	--text-disabled: #9BA8C7;
+
+	--border: rgba(0, 0, 0, 0.09);
+	--border-strong: rgba(0, 0, 0, 0.16);
+	--heatmap-overlay: rgba(214, 59, 59, 0.25);
+	--ring: rgba(79, 95, 232, 0.5);
+	--ring-weak: rgba(79, 95, 232, 0.2);
+
+	/* Gradient Colors */
+	--grad-1: rgba(79, 95, 232, 0.07);
+	--grad-2: rgba(46, 126, 204, 0.05);
+	--grad-3: rgba(217, 122, 48, 0.04);
 }
 
-html,
-body,
-#app-root {
-	min-height: 100%;
-} */
+/* Light theme — scrollbar override */
+.light, [data-theme='light'] {
+	scrollbar-color: var(--bg-subtle) var(--bg-surface);
+}
+/* ──────────────────────────────────────────────────────────────────────────── */
 
 body {
 	background-color: var(--bg-base);
 	background-image:
-		radial-gradient(900px 500px at 18% -10%, rgba(106, 124, 255, 0.12), rgba(106, 124, 255, 0) 60%),
-		radial-gradient(700px 420px at 86% 14%, rgba(90, 167, 255, 0.08), rgba(90, 167, 255, 0) 55%),
-		radial-gradient(800px 600px at 40% 110%, rgba(255, 154, 92, 0.06), rgba(255, 154, 92, 0) 60%);
+		radial-gradient(900px 500px at 18% -10%, var(--grad-1), transparent 60%),
+		radial-gradient(700px 420px at 86% 14%, var(--grad-2), transparent 55%),
+		radial-gradient(800px 600px at 40% 110%, var(--grad-3), transparent 60%);
 	background-attachment: fixed;
 	color: var(--text-primary);
 	font-family: var(--font-sans);

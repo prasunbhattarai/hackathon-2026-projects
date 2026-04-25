@@ -6,6 +6,7 @@ import { Activity, BrainCircuit, ShieldCheck } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { Button } from '@/Components/ui'
 import { ROUTES } from '@/constants/routes'
+import { ThemeToggle } from '@/Components/ui/ThemeToggle'
 
 const nav = [
   { label: 'Home', href: ROUTES.HOME },
@@ -65,6 +66,8 @@ export function PublicNavbar() {
               Explainable outputs
             </span>
           </div> */}
+
+          <ThemeToggle />
 
           <Button
             as={Link}

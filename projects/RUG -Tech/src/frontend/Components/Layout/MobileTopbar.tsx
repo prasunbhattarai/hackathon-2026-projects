@@ -7,6 +7,8 @@ import { Avatar } from '@/Components/ui/Avatar'
 import { useNotificationStore } from '@/store/notificationStore'
 import { Badge } from '@/Components/ui/Badge'
 
+import { ThemeToggle } from '@/Components/ui/ThemeToggle'
+
 export interface MobileTopbarProps {
   onMenuClick: () => void
   className?: string
@@ -42,6 +44,7 @@ export const MobileTopbar = ({ onMenuClick, className }: MobileTopbarProps) => {
 
       {/* Right actions */}
       <div className="flex items-center gap-2">
+        <ThemeToggle />
         <button className="relative p-2 rounded-[4px] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] transition-colors cursor-pointer">
           <Bell size={18} />
           {unreadCount > 0 && (
