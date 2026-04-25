@@ -60,10 +60,10 @@ export const Topbar = ({ title, className }: TopbarProps) => {
 
         {/* User */}
         <div className="flex items-center gap-2.5 ml-2 pl-2 border-l border-[var(--border)]">
-          <Avatar name={user?.name ?? 'User'} size="sm" />
+          <Avatar name={user?.fullName ?? 'User'} size="sm" />
           <div className="hidden md:flex flex-col">
             <span className="text-sm font-sans text-[var(--text-primary)] leading-tight">
-              {user?.name ?? 'User'}
+              {user?.fullName ?? 'User'}
             </span>
             <Badge variant="outline" size="sm" className="mt-0.5 w-fit">
               {user?.role?.replace('_', ' ') ?? 'Doctor'}

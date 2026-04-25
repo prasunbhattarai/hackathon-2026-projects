@@ -220,7 +220,7 @@ export const Sidebar = () => {
 
       {/* ---- User Section ---- */}
       <div className={cn('px-3 py-3 shrink-0 flex items-center gap-2.5', collapsed && 'justify-center')}>
-        <Avatar name={user?.name ?? 'User'} size="sm" role={user?.role} />
+        <Avatar name={user?.fullName ?? 'User'} size="sm" role={user?.role} />
 
         <AnimatePresence>
           {!collapsed && (
@@ -232,7 +232,7 @@ export const Sidebar = () => {
               transition={{ duration: 0.1 }}
             >
               <p className="text-sm font-sans text-[var(--text-primary)] truncate">
-                {user?.name ?? 'User'}
+                {user?.fullName ?? 'User'}
               </p>
               <p className="text-[10px] font-condensed font-medium text-[var(--text-muted)] uppercase tracking-wide">
                 {user?.role?.replace('_', ' ') ?? 'Doctor'}
