@@ -1,37 +1,75 @@
 import { create } from 'zustand'
-import type { UserRole } from '@/constants/roles'
+import { persist } from 'zustand/middleware'
+import type { User, LoginRequest } from '@/types/auth.types'
+import { UserRole } from '@/types/auth.types'
+import { ROLE_PERMISSIONS } from '@/constants/roles'
+import * as authService from '@/services/auth.service'
 
-export interface AuthUser {
-  id: string
-  name: string
-  email: string
-  role: UserRole
-  clinicId?: string
-}
-
-export interface AuthStore {
-  user: AuthUser | null
+export interface AuthState {
+  user: User | null
+  accessToken: string | null
   isAuthenticated: boolean
-  setUser: (user: AuthUser | null) => void
+  isLoading: boolean
+  login: (credentials: LoginRequest) => Promise<void>
   logout: () => void
+  getRole: () => UserRole | null
+  hasPermission: (permission: string) => boolean
 }
 
-/** Mock user for development — replace with real auth later */
-const MOCK_USER: AuthUser = {
-  id: 'usr-001',
-  name: 'Dr. Anika Sharma',
-  email: 'anika.sharma@fundusai.com',
-  role: 'doctor',
-  clinicId: 'clinic-001',
-}
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set, get) => ({
+      user: null,
+      accessToken: null,
+      isAuthenticated: false,
+      isLoading: false,
 
-export const useAuthStore = create<AuthStore>((set) => ({
-  user: MOCK_USER,
-  isAuthenticated: true,
+      login: async (credentials: LoginRequest) => {
+        set({ isLoading: true })
+        try {
+          const res = await authService.login(credentials)
+          if (!res.success || !res.data) {
+            set({ isLoading: false })
+            throw new Error(res.error?.message ?? 'Login failed')
+          }
+          set({
+            user: res.data.user,
+            accessToken: res.data.accessToken,
+            isAuthenticated: true,
+            isLoading: false,
+          })
+        } catch (err) {
+          set({ isLoading: false })
+          throw err
+        }
+      },
 
-  setUser: (user) =>
-    set({ user, isAuthenticated: user !== null }),
+      logout: () => {
+        set({
+          user: null,
+          accessToken: null,
+          isAuthenticated: false,
+        })
+      },
 
-  logout: () =>
-    set({ user: null, isAuthenticated: false }),
-}))
+      getRole: () => {
+        return get().user?.role ?? null
+      },
+
+      hasPermission: (permission: string) => {
+        const role = get().user?.role
+        if (!role) return false
+        const perms = ROLE_PERMISSIONS[role] as readonly string[]
+        return perms.includes('all') || perms.includes(permission)
+      },
+    }),
+    {
+      name: 'fundus-auth',
+      partialize: (state) => ({
+        user: state.user,
+        accessToken: state.accessToken,
+        isAuthenticated: state.isAuthenticated,
+      }),
+    },
+  ),
+)

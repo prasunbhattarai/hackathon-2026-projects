@@ -5,7 +5,7 @@ import type { AuthSession, JWTPayload, LoginRequest, LoginResponse } from "@/typ
 const MOCK_PASSWORD = "fundus-demo-123";
 
 function encodePayload(payload: JWTPayload): string {
-	return Buffer.from(JSON.stringify(payload)).toString("base64url");
+	return btoa(JSON.stringify(payload));
 }
 
 export function buildMockToken(payload: JWTPayload): string {
@@ -17,7 +17,7 @@ export function decodeMockToken(token: string): JWTPayload | null {
 	if (parts.length !== 3) return null;
 
 	try {
-		return JSON.parse(Buffer.from(parts[1], "base64url").toString("utf-8")) as JWTPayload;
+		return JSON.parse(atob(parts[1])) as JWTPayload;
 	} catch {
 		return null;
 	}
