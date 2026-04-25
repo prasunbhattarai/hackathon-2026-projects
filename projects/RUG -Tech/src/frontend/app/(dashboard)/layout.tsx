@@ -1,11 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
 import { Sidebar } from '@/Components/Layout/Sidebar'
 import { Topbar } from '@/Components/Layout/Topbar'
 import { MobileSidebar } from '@/Components/Layout/MobileSidebar'
 import { MobileTopbar } from '@/Components/Layout/MobileTopbar'
 import { Container } from '@/Components/Layout/Container'
+import { useAuthStore } from '@/store/authStore'
+import { ROUTES } from '@/constants/routes'
+import { UserRole } from '@/types/auth.types'
+import { AccessDenied } from '@/Components/shared/AccessDenied'
 
 export default function DashboardLayout({
   children,
@@ -13,6 +18,19 @@ export default function DashboardLayout({
   children: React.ReactNode
 }>) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const router = useRouter()
+  const pathname = usePathname()
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const role = useAuthStore((s) => s.user?.role ?? null)
+
+  useEffect(() => {
+    if (!isAuthenticated) router.replace(ROUTES.LOGIN)
+  }, [isAuthenticated, router])
+
+  const isAdminRoute = useMemo(() => pathname?.startsWith('/admin'), [pathname])
+  const hasAccess = !isAdminRoute || role === UserRole.SUPER_ADMIN
+
+  if (!isAuthenticated) return null
 
   return (
     <div className="flex h-screen bg-[var(--bg-base)] overflow-hidden">
@@ -33,7 +51,17 @@ export default function DashboardLayout({
         </div>
 
         <main className="flex-1 overflow-y-auto">
-          <Container className="py-4 md:py-6">{children}</Container>
+          <Container className="py-4 md:py-6">
+            {hasAccess ? (
+              children
+            ) : (
+              <AccessDenied
+                title="Admin access required"
+                subtitle="This area is restricted to Super Admin users."
+                onBack={() => router.back()}
+              />
+            )}
+          </Container>
         </main>
       </div>
 

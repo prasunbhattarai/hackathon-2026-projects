@@ -91,32 +91,6 @@ export function useCaseUpload() {
     })
   }, [])
 
-  const handleUpload = useCallback(async () => {
-    if (!selectedPatient || !imageFile) return
-
-    setIsUploading(true)
-    setStep('quality_check')
-    setQualityResult(null)
-
-    try {
-      // Simulate quality check
-      const quality = await simulateQualityCheck()
-      setQualityResult(quality)
-
-      if (quality !== 'good') {
-        setIsUploading(false)
-        return // Stay on quality_check step — user can retake or proceed anyway
-      }
-
-      // Quality passed — go to processing
-      await startProcessing()
-    } catch {
-      setUploadError({ type: 'upload', message: 'Upload failed. Please try again.' })
-      setStep('error')
-      setIsUploading(false)
-    }
-  }, [selectedPatient, imageFile, simulateQualityCheck])
-
   const startProcessing = useCallback(async () => {
     setStep('processing')
     const newCaseId = `case-${String(Date.now()).slice(-6)}`
@@ -156,6 +130,32 @@ export function useCaseUpload() {
       router.push(ROUTES.CASE_DETAIL('case-011'))
     }, 1200)
   }, [router, addNotification])
+
+  const handleUpload = useCallback(async () => {
+    if (!selectedPatient || !imageFile) return
+
+    setIsUploading(true)
+    setStep('quality_check')
+    setQualityResult(null)
+
+    try {
+      // Simulate quality check
+      const quality = await simulateQualityCheck()
+      setQualityResult(quality)
+
+      if (quality !== 'good') {
+        setIsUploading(false)
+        return // Stay on quality_check step — user can retake or proceed anyway
+      }
+
+      // Quality passed — go to processing
+      await startProcessing()
+    } catch {
+      setUploadError({ type: 'upload', message: 'Upload failed. Please try again.' })
+      setStep('error')
+      setIsUploading(false)
+    }
+  }, [selectedPatient, imageFile, simulateQualityCheck, startProcessing])
 
   const proceedAnyway = useCallback(async () => {
     await startProcessing()

@@ -1,14 +1,15 @@
+'use client'
+
 import { useEffect, useRef, type RefObject } from 'react'
 
-export function useClickOutside<T extends HTMLElement = HTMLElement>(
-  handler: () => void,
-): RefObject<T | null> {
-  const ref = useRef<T | null>(null)
-
+export function useClickOutside<T extends HTMLElement>(handler: () => void): RefObject<T | null> {
+  const ref = useRef<T>(null)
+  
   useEffect(() => {
     const listener = (event: MouseEvent | TouchEvent) => {
       const el = ref.current
-      if (!el || el.contains(event.target as Node)) return
+      if (!el) return
+      if (el.contains(event.target as Node)) return
       handler()
     }
 

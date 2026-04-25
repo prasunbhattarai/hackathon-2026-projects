@@ -65,7 +65,7 @@ export const reportBundlesMock: ReportBundle[] = caseIdsWithAnalysis.slice(0, 20
 					? ["Optimize antihypertensive regimen", "Tight glycemic management", "Schedule specialist review"]
 					: ["Continue current systemic medications", "Lifestyle counseling", "Routine ophthalmic monitoring"],
 			ragJustification: analysis.ragJustification,
-			heatmapUrl: analysis.heatmapUrl ?? `https://picsum.photos/seed/doctor-heatmap-${index + 1}/512/512`,
+			heatmapUrl: analysis.heatmapUrl ?? `/images/sample_fundus.jg`,
 			generatedAt: analysis.createdAt,
 		},
 		patient: {

@@ -34,7 +34,7 @@ export const DiseaseCard = ({ disease, className }: DiseaseCardProps) => {
         className,
       )}
       style={{
-        // @ts-ignore
+        // @ts-expect-error -- CSS custom property for accent color
         '--card-accent': disease.accentColor,
       }}
     >

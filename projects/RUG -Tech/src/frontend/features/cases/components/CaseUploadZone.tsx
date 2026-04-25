@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useRef, useState } from 'react'
+import Image from 'next/image'
 import { ScanEye, X } from 'lucide-react'
 import { cn } from '@/lib/cn'
 
@@ -80,10 +81,13 @@ export const CaseUploadZone = ({
         )}
         onClick={handleClick}
       >
-        <img
+        <Image
           src={imagePreviewUrl}
           alt="Fundus image preview"
-          className="w-full h-full object-cover"
+          fill
+          sizes="(max-width: 768px) 100vw, 800px"
+          unoptimized
+          className="object-cover"
         />
 
         {/* Overlay info */}

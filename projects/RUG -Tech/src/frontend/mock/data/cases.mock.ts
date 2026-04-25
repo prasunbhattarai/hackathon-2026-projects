@@ -77,7 +77,7 @@ export const casesMock: CaseRecord[] = Array.from({ length: 50 }, (_, index) => 
 		patientId: patient.id,
 		clinicId: patient.clinicId,
 		submittedBy: submitterIds[index % submitterIds.length],
-		imageUrl: `https://picsum.photos/seed/case-${index + 1}/512/512`,
+		imageUrl: `/images/sample_fundus.jpg`,
 		imageQuality,
 		status,
 		priorityScore: score,

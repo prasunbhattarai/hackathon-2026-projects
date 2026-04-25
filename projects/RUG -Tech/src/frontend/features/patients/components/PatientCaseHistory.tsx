@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { Upload } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { Badge } from '@/Components/ui/Badge'
@@ -92,11 +93,12 @@ export const PatientCaseHistory = ({
           >
             {/* Thumbnail */}
             <div className="w-12 h-12 rounded-[4px] bg-[var(--bg-elevated)] shrink-0 overflow-hidden">
-              <img
+              <Image
                 src={`https://picsum.photos/seed/${c.id}/96/96`}
-                alt=""
+                alt="Fundus thumbnail"
+                width={48}
+                height={48}
                 className="w-full h-full object-cover"
-                loading="lazy"
               />
             </div>
 

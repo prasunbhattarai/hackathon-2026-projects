@@ -14,6 +14,8 @@ import { useAuthStore } from '@/store/authStore'
 import { Avatar } from '@/Components/ui/Avatar'
 import type { UserRole } from '@/constants/roles'
 import { ROLE_PERMISSIONS } from '@/constants/roles'
+import { RoleBadge } from '@/Components/shared/RoleBadge'
+import { UserRole as UserRoleEnum } from '@/types/auth.types'
 
 interface NavItem {
   label: string
@@ -144,9 +146,9 @@ export const MobileSidebar = ({ isOpen, onClose }: MobileSidebarProps) => {
                 <p className="text-sm text-[var(--text-primary)] truncate">
                   {user?.fullName ?? 'User'}
                 </p>
-                <p className="text-[10px] font-condensed text-[var(--text-muted)] uppercase">
-                  {user?.role?.replace('_', ' ') ?? 'Doctor'}
-                </p>
+                <div className="mt-0.5">
+                  <RoleBadge role={(user?.role ?? UserRoleEnum.DOCTOR) as UserRoleEnum} size="sm" />
+                </div>
               </div>
               <button
                 onClick={logout}

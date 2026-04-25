@@ -22,6 +22,8 @@ import { useUIStore } from '@/store/uiStore'
 import { useAuthStore } from '@/store/authStore'
 import { Avatar } from '@/Components/ui/Avatar'
 import { Badge } from '@/Components/ui/Badge'
+import { RoleBadge } from '@/Components/shared/RoleBadge'
+import { UserRole as UserRoleEnum } from '@/types/auth.types'
 
 /* ---------- Nav Item Definition ---------- */
 
@@ -234,9 +236,9 @@ export const Sidebar = () => {
               <p className="text-sm font-sans text-[var(--text-primary)] truncate">
                 {user?.fullName ?? 'User'}
               </p>
-              <p className="text-[10px] font-condensed font-medium text-[var(--text-muted)] uppercase tracking-wide">
-                {user?.role?.replace('_', ' ') ?? 'Doctor'}
-              </p>
+              <div className="mt-0.5">
+                <RoleBadge role={(user?.role ?? UserRoleEnum.DOCTOR) as UserRoleEnum} size="md" />
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

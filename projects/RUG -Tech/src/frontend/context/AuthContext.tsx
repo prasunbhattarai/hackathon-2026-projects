@@ -3,8 +3,6 @@
 import {
   createContext,
   useContext,
-  useEffect,
-  useState,
   type ReactNode,
 } from 'react'
 import { useAuthStore, type AuthState } from '@/store/authStore'
@@ -18,15 +16,6 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const store = useAuthStore()
-  const [hydrated, setHydrated] = useState(false)
-
-  useEffect(() => {
-    setHydrated(true)
-  }, [])
-
-  if (!hydrated) {
-    return null
-  }
 
   return (
     <AuthContext.Provider

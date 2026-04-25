@@ -3,6 +3,7 @@
 import { useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, ZoomIn } from 'lucide-react'
+import Image from 'next/image'
 import { cn } from '@/lib/cn'
 
 export interface ImageLightboxProps {
@@ -75,16 +76,22 @@ export const ImageLightbox = ({
             transition={{ duration: 0.2 }}
             onClick={(e) => e.stopPropagation()}
           >
-            <img
+            <Image
               src={imageUrl}
               alt={alt}
-              className="max-w-full max-h-full object-contain"
+              fill
+              sizes="90vw"
+              priority
+              className="object-contain"
             />
             {overlayUrl && showOverlay && (
-              <img
+              <Image
                 src={overlayUrl}
                 alt="Heatmap overlay"
-                className="absolute inset-0 w-full h-full object-contain mix-blend-multiply opacity-70"
+                fill
+                sizes="90vw"
+                priority
+                className="object-contain mix-blend-multiply opacity-70"
               />
             )}
           </motion.div>

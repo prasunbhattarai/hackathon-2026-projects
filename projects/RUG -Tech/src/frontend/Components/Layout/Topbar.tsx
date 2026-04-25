@@ -4,8 +4,9 @@ import { Search, Command } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { useAuthStore } from '@/store/authStore'
 import { Avatar } from '@/Components/ui/Avatar'
-import { Badge } from '@/Components/ui/Badge'
 import { NotificationBell } from '@/Components/shared/NotificationBell'
+import { RoleBadge } from '@/Components/shared/RoleBadge'
+import { UserRole } from '@/types/auth.types'
 
 export interface TopbarProps {
   title?: string
@@ -65,9 +66,9 @@ export const Topbar = ({ title, className }: TopbarProps) => {
             <span className="text-sm font-sans text-[var(--text-primary)] leading-tight">
               {user?.fullName ?? 'User'}
             </span>
-            <Badge variant="outline" size="sm" className="mt-0.5 w-fit">
-              {user?.role?.replace('_', ' ') ?? 'Doctor'}
-            </Badge>
+            <div className="mt-0.5 w-fit">
+              <RoleBadge role={(user?.role ?? UserRole.DOCTOR) as UserRole} size="sm" />
+            </div>
           </div>
         </div>
       </div>

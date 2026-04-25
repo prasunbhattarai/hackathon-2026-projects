@@ -17,7 +17,9 @@ interface UseWebSocketReturn {
  */
 export function useWebSocket(caseId: string | null): UseWebSocketReturn {
   const [lastMessage, setLastMessage] = useState<WebSocketCaseEvent | null>(null)
-  const [connectionStatus, setConnectionStatus] = useState<UseWebSocketReturn['connectionStatus']>('disconnected')
+  const connectionStatus: UseWebSocketReturn['connectionStatus'] = caseId
+    ? 'connected'
+    : 'disconnected'
   const addNotification = useNotificationStore((s) => s.addNotification)
   const intervalRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const stepRef = useRef(0)
@@ -31,12 +33,9 @@ export function useWebSocket(caseId: string | null): UseWebSocketReturn {
 
   useEffect(() => {
     if (!caseId) {
-      setConnectionStatus('disconnected')
       cleanup()
       return
     }
-
-    setConnectionStatus('connected')
     stepRef.current = 0
 
     const statusProgression: Array<{

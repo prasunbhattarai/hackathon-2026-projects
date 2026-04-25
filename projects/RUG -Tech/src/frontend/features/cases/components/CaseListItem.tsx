@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { MoreVertical } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { Button } from '@/Components/ui/Button'
@@ -65,11 +66,12 @@ export const CaseListItem = ({ caseItem, className }: CaseListItemProps) => {
     >
       {/* Thumbnail */}
       <div className="w-[60px] h-[60px] rounded-[4px] overflow-hidden bg-[var(--bg-elevated)] shrink-0">
-        <img
+        <Image
           src={`https://picsum.photos/seed/${caseItem.id}/120/120`}
           alt="Fundus thumbnail"
+          width={60}
+          height={60}
           className="w-full h-full object-cover"
-          loading="lazy"
         />
       </div>
 

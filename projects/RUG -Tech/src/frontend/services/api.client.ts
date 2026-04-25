@@ -1,4 +1,6 @@
 import type { ApiResponse } from '@/types/api.types'
+import * as authService from '@/services/auth.service'
+import { useAuthStore } from '@/store/authStore'
 
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK_API !== 'false'
 
@@ -103,6 +105,51 @@ async function routeMock<T>(
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? ''
 
+function setAccessTokenCookie(token: string) {
+  if (typeof document === 'undefined') return
+  const secure = window.location.protocol === 'https:' ? '; Secure' : ''
+  document.cookie = `fundus-access-token=${encodeURIComponent(
+    token,
+  )}; Path=/; SameSite=Lax${secure}`
+}
+
+async function handle401AndRetry<T>(
+  original: () => Promise<Response>,
+): Promise<ApiResponse<T>> {
+  const state = useAuthStore.getState()
+  const token = state.accessToken
+  if (!token) {
+    state.logout()
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('fundus:session-expired'))
+    }
+    return {
+      success: false,
+      data: null as unknown as T,
+      error: { code: 'UNAUTHENTICATED', message: 'Session expired' },
+    }
+  }
+
+  const refreshRes = await authService.refreshToken(token)
+  if (!refreshRes.success || !refreshRes.data?.accessToken) {
+    state.logout()
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('fundus:session-expired'))
+    }
+    return {
+      success: false,
+      data: null as unknown as T,
+      error: { code: 'SESSION_EXPIRED', message: 'Session expired' },
+    }
+  }
+
+  useAuthStore.setState({ accessToken: refreshRes.data.accessToken })
+  setAccessTokenCookie(refreshRes.data.accessToken)
+
+  const retryRes = await original()
+  return retryRes.json()
+}
+
 /** GET request — real or mock */
 export async function apiGet<T>(
   endpoint: string,
@@ -113,7 +160,9 @@ export async function apiGet<T>(
   const url = new URL(`${API_BASE}${endpoint}`)
   if (params) Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v))
 
-  const res = await fetch(url.toString(), { credentials: 'include' })
+  const doFetch = () => fetch(url.toString(), { credentials: 'include' })
+  const res = await doFetch()
+  if (res.status === 401) return handle401AndRetry<T>(doFetch)
   return res.json()
 }
 
@@ -124,12 +173,15 @@ export async function apiPost<T>(
 ): Promise<ApiResponse<T>> {
   if (USE_MOCK) return routeMock<T>('POST', endpoint, body)
 
-  const res = await fetch(`${API_BASE}${endpoint}`, {
+  const doFetch = () =>
+    fetch(`${API_BASE}${endpoint}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
     body: JSON.stringify(body),
   })
+  const res = await doFetch()
+  if (res.status === 401) return handle401AndRetry<T>(doFetch)
   return res.json()
 }
 
@@ -140,10 +192,13 @@ export async function apiUpload<T>(
 ): Promise<ApiResponse<T>> {
   if (USE_MOCK) return routeMock<T>('UPLOAD', endpoint, formData)
 
-  const res = await fetch(`${API_BASE}${endpoint}`, {
+  const doFetch = () =>
+    fetch(`${API_BASE}${endpoint}`, {
     method: 'POST',
     credentials: 'include',
     body: formData,
   })
+  const res = await doFetch()
+  if (res.status === 401) return handle401AndRetry<T>(doFetch)
   return res.json()
 }

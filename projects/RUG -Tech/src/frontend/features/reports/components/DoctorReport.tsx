@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { cn } from '@/lib/cn'
 import { Badge } from '@/Components/ui/Badge'
 import { RAGJustificationCard } from '@/features/analysis/components/RAGJustificationCard'
@@ -112,9 +113,11 @@ export const DoctorReportView = ({
             AI Heatmap Analysis
           </h3>
           <div className="inline-block bg-black rounded-[4px] overflow-hidden border border-[var(--border)]">
-            <img
+            <Image
               src={report.heatmapUrl}
               alt="Heatmap overlay"
+              width={200}
+              height={200}
               className="w-[200px] h-[200px] object-cover"
             />
           </div>

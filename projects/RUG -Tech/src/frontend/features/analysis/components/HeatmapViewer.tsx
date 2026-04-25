@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { Eye, EyeOff, ZoomIn } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { Badge } from '@/Components/ui/Badge'
@@ -43,17 +44,22 @@ export const HeatmapViewer = ({
         {/* Image container */}
         <div className="relative aspect-square w-full">
           {/* Fundus image */}
-          <img
+          <Image
             src={fundusImageUrl}
             alt="Fundus image"
+            width={512}
+            height={512}
+            priority
             className="w-full h-full object-contain"
           />
 
           {/* Heatmap overlay */}
           {heatmapUrl && !isProcessing && (
-            <img
+            <Image
               src={heatmapUrl}
               alt="Heatmap overlay"
+              width={512}
+              height={512}
               className={cn(
                 'absolute inset-0 w-full h-full object-contain',
                 'mix-blend-multiply',

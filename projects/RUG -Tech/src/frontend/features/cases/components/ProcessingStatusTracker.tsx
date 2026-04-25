@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useMemo, useEffect, useState } from 'react'
 import { Check, Loader2, Circle, X } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { CaseStatus } from '@/types/case.types'
@@ -36,54 +36,43 @@ export const ProcessingStatusTracker = ({
   currentStatus,
   className,
 }: ProcessingStatusTrackerProps) => {
-  const [steps, setSteps] = useState<ProcessingStep[]>(initialSteps)
+  const [tick, setTick] = useState(0)
 
   // Simulate processing progression
   useEffect(() => {
-    if (currentStatus !== CaseStatus.PROCESSING) {
-      // If already complete, show all done
-      if (currentStatus === CaseStatus.AWAITING_REVIEW || currentStatus === CaseStatus.APPROVED) {
-        setSteps(initialSteps.map((s, i) => ({
-          ...s,
-          status: 'complete',
-          timeOffset: getTimeLabel(i),
-        })))
-      }
-      return
-    }
+    if (currentStatus !== CaseStatus.PROCESSING) return
 
-    // Start simulation
-    let currentStep = 0
-    const newSteps = initialSteps.map((s) => ({ ...s }))
-
-    // First step always complete
-    newSteps[0] = { ...newSteps[0], status: 'complete', timeOffset: getTimeLabel(0) }
-    newSteps[1] = { ...newSteps[1], status: 'active' }
-    setSteps([...newSteps])
-    currentStep = 1
-
+    let step = 1
     const interval = setInterval(() => {
-      if (currentStep >= newSteps.length) {
-        clearInterval(interval)
-        return
-      }
-
-      newSteps[currentStep] = {
-        ...newSteps[currentStep],
-        status: 'complete',
-        timeOffset: getTimeLabel(currentStep),
-      }
-
-      if (currentStep + 1 < newSteps.length) {
-        newSteps[currentStep + 1] = { ...newSteps[currentStep + 1], status: 'active' }
-      }
-
-      currentStep++
-      setSteps([...newSteps])
+      setTick(step)
+      step += 1
+      if (step >= initialSteps.length) clearInterval(interval)
     }, 2000)
 
     return () => clearInterval(interval)
   }, [currentStatus])
+
+  const steps = useMemo<ProcessingStep[]>(() => {
+    if (
+      currentStatus === CaseStatus.AWAITING_REVIEW ||
+      currentStatus === CaseStatus.APPROVED
+    ) {
+      return initialSteps.map((s, i) => ({
+        ...s,
+        status: 'complete',
+        timeOffset: getTimeLabel(i),
+      }))
+    }
+
+    if (currentStatus !== CaseStatus.PROCESSING) return initialSteps
+
+    return initialSteps.map((s, i) => {
+      if (i === 0) return { ...s, status: 'complete', timeOffset: getTimeLabel(0) }
+      if (i <= tick) return { ...s, status: 'complete', timeOffset: getTimeLabel(i) }
+      if (i === tick + 1) return { ...s, status: 'active' }
+      return { ...s, status: 'pending' }
+    })
+  }, [currentStatus, tick])
 
   const statusIcon = (status: ProcessingStep['status']) => {
     switch (status) {
