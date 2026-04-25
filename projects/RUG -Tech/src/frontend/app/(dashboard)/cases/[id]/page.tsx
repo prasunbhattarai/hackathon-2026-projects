@@ -10,6 +10,8 @@ import { useCaseDetail } from '@/features/cases/hooks/useCaseDetail'
 import { CaseDetailHeader } from '@/features/cases/components/CaseDetailHeader'
 import { HeatmapViewer } from '@/features/analysis/components/HeatmapViewer'
 import { DiagnosisResultPanel } from '@/features/analysis/components/DiagnosisResultPanel'
+import { ProcessingStatusTracker } from '@/features/cases/components/ProcessingStatusTracker'
+import { LiveIndicator } from '@/Components/shared/LiveIndicator'
 import { CaseStatus } from '@/types/case.types'
 
 export default function CaseDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -62,8 +64,9 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
             <div className="absolute inset-0 w-5 h-5 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-orbital-spin" />
           </div>
           <span className="text-sm text-[var(--accent)] font-medium">
-            Analysis in progress — results will appear when ready
+            Analysis in progress — results will appear automatically
           </span>
+          <LiveIndicator isLive={true} />
           <Badge variant="info" size="sm" dot>
             Processing
           </Badge>
@@ -75,11 +78,12 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
 
       {/* Two-panel layout */}
       <div className="grid grid-cols-1 lg:grid-cols-[45%_55%] gap-6">
-        {/* Left — Image viewer */}
+        {/* Left — Image viewer + Processing tracker */}
         <motion.div
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4, ease: 'easeOut' }}
+          className="flex flex-col gap-4"
         >
           <HeatmapViewer
             fundusImageUrl={caseData.imageUrl}
@@ -87,6 +91,21 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
             isProcessing={isProcessing}
             imageQuality={caseData.imageQuality}
           />
+
+          {/* Processing tracker (shown below image when processing) */}
+          {isProcessing && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[4px] p-4"
+            >
+              <ProcessingStatusTracker
+                caseId={id}
+                currentStatus={caseData.status}
+              />
+            </motion.div>
+          )}
         </motion.div>
 
         {/* Right — Analysis results */}

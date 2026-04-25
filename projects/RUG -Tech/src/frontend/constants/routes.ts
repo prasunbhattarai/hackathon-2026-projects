@@ -11,7 +11,7 @@ export const ROUTES = {
   DISEASES: '/diseases',
   DISEASE_DETAIL: (slug: string) => `/diseases/${slug}`,
   ADMIN: '/admin',
-  ADMIN_CLINICS: '/admin/clinics',
+  ADMIN_CLINICS: '/admin/clinicis',
   ADMIN_USERS: '/admin/users',
   SETTINGS: '/settings',
 } as const
