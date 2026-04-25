@@ -65,7 +65,11 @@ async function routeMock<T>(
 
   if (endpoint === '/cases/upload' && (method === 'POST' || method === 'UPLOAD')) {
     const { uploadCaseMock } = await import('@/mock/handlers/case.handler')
-    return uploadCaseMock('patient-001') as Promise<ApiResponse<T>>
+    let patientId = 'patient-001'
+    if (bodyOrParams instanceof FormData) {
+      patientId = (bodyOrParams as FormData).get('patientId')?.toString() ?? patientId
+    }
+    return uploadCaseMock(patientId) as Promise<ApiResponse<T>>
   }
 
   /* ---- Analysis ---- */

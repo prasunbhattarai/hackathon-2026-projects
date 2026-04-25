@@ -42,12 +42,12 @@ export const RecentCasesTable = ({
   return (
     <div
       className={cn(
-        'bg-[var(--bg-surface)] border border-[var(--border)] rounded-[4px] overflow-hidden',
+        'bg-(--bg-surface) border border-(--border) rounded-[4px] overflow-hidden',
         className,
       )}
     >
-      <div className="px-4 py-3 border-b border-[var(--border)]">
-        <h3 className="font-condensed font-medium text-[11px] uppercase tracking-[0.08em] text-[var(--text-muted)]">
+      <div className="px-6 py-3 border-b border-[var(--border)]">
+        <h3 className="p-10! font-condensed font-medium text-[11px] uppercase tracking-[0.08em] text-[var(--text-muted)]">
           Recent Cases
         </h3>
       </div>

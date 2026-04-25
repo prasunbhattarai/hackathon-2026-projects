@@ -106,7 +106,7 @@ export const Sidebar = () => {
       transition={{ duration: 0.2, ease: 'easeInOut' }}
     >
       {/* ---- Logo ---- */}
-      <div className="h-14 px-4 flex items-center gap-3 shrink-0">
+      <div className="h-14 px-4 flex items-center gap-3 shrink-0 ">
         <div className="w-8 h-8 rounded-[4px] bg-[var(--accent)]/15 flex items-center justify-center shrink-0">
           <Eye size={18} className="text-[var(--accent)]" />
         </div>

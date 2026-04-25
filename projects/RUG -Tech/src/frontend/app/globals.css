@@ -1,5 +1,54 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Sans+Condensed:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+/* @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Sans+Condensed:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap'); */
+
 @import "tailwindcss";
+
+/* @source "../Components";
+@source "../components";
+@source "../features";
+@source "../providers";
+@source "../context";
+@source "../hooks";
+@source "../lib"; */
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+	--color-background-base: var(--bg-base);
+	--color-background-surface: var(--bg-surface);
+	--color-background-elevated: var(--bg-elevated);
+	--color-background-subtle: var(--bg-subtle);
+
+	--color-accent: var(--accent);
+	--color-accent-glow: var(--accent-glow);
+
+	--color-severity-critical: var(--sev-critical);
+	--color-severity-high: var(--sev-high);
+	--color-severity-medium: var(--sev-medium);
+	--color-severity-low: var(--sev-low);
+	--color-severity-none: var(--sev-none);
+
+	--color-border: var(--border);
+	--color-border-strong: var(--border-strong);
+
+	--color-text-primary: var(--text-primary);
+	--color-text-secondary: var(--text-secondary);
+	--color-text-muted: var(--text-muted);
+
+	--font-display: "DM Serif Display", serif;
+	--font-sans: "IBM Plex Sans", sans-serif;
+	--font-condensed: "IBM Plex Sans Condensed", sans-serif;
+	--font-mono: "JetBrains Mono", monospace;
+
+	--radius-sm: 2px;
+	--radius-DEFAULT: 4px;
+	--radius-md: 6px;
+	--radius-lg: 8px;
+
+	--shadow-glow: 0 0 0 1px var(--border), 0 8px 24px var(--accent-glow);
+	--shadow-glow-sm: 0 0 0 1px var(--border), 0 4px 12px var(--accent-glow);
+	--shadow-glow-lg: 0 0 0 1px var(--border-strong), 0 14px 32px var(--accent-glow);
+}
+
 @import "../styles/animations.css";
 @import "../styles/typography.css";
 
@@ -19,12 +68,12 @@
 	--text-secondary: #8B93A1;
 	--text-muted: #4A5060;
 	--text-disabled: #2E3340;
-	--border: rgba(255,255,255,0.06);
-	--border-strong: rgba(255,255,255,0.12);
+	--border: rgba(255, 255, 255, 0.06);
+	--border-strong: rgba(255, 255, 255, 0.12);
 	--heatmap-overlay: rgba(244, 91, 91, 0.3);
 }
 
-* {
+/* * {
 	box-sizing: border-box;
 	margin: 0;
 	padding: 0;
@@ -34,7 +83,7 @@ html,
 body,
 #app-root {
 	min-height: 100%;
-}
+} */
 
 body {
 	background-color: var(--bg-base);
@@ -72,4 +121,3 @@ body {
 *::-webkit-scrollbar-thumb:hover {
 	background: var(--accent);
 }
-
