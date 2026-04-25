@@ -1,0 +1,294 @@
+/* ============================================================
+   Fundus AI — Keyframe Animations & Utility Classes
+   Theme: Clinical Dark Precision
+   ============================================================ */
+
+/* ---- Keyframes ---- */
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes orbital-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes radial-reveal {
+  from {
+    clip-path: circle(0% at 50% 50%);
+  }
+  to {
+    clip-path: circle(100% at 50% 50%);
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-4px);
+  }
+  40% {
+    transform: translateX(4px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(3px);
+  }
+}
+
+@keyframes bell-ring {
+  0% {
+    transform: rotate(0deg);
+  }
+  10% {
+    transform: rotate(8deg);
+  }
+  20% {
+    transform: rotate(-8deg);
+  }
+  30% {
+    transform: rotate(8deg);
+  }
+  40% {
+    transform: rotate(-8deg);
+  }
+  50% {
+    transform: rotate(6deg);
+  }
+  60% {
+    transform: rotate(-6deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.8);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes border-flash-success {
+  0% {
+    box-shadow: 0 0 0 0 rgba(79, 142, 247, 0);
+  }
+  30% {
+    box-shadow: 0 0 0 1px rgba(79, 142, 247, 0.55);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(79, 142, 247, 0);
+  }
+}
+
+@keyframes dot-wave {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-1px);
+  }
+}
+
+@keyframes critical-shadow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(244, 91, 91, 0);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(244, 91, 91, 0.22);
+  }
+}
+
+/* ---- Utility Classes ---- */
+
+.animate-shimmer {
+  animation: shimmer 1.5s linear infinite;
+  background-size: 200% 100%;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out both;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.2s ease-out both;
+}
+
+.animate-orbital-spin {
+  animation: orbital-spin 1s linear infinite;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.25s ease-out both;
+}
+
+.animate-radial-reveal {
+  animation: radial-reveal 0.4s ease-out both;
+}
+
+.animate-shake {
+  animation: shake 0.35s ease-in-out both;
+}
+
+.animate-bell-ring {
+  transform-origin: 50% 10%;
+  animation: bell-ring 0.55s ease-in-out both;
+}
+
+.animate-pop {
+  animation: pop 0.18s ease-out both;
+}
+
+.animate-border-flash-success {
+  animation: border-flash-success 0.45s ease-out both;
+}
+
+.animate-dot-wave {
+  animation: dot-wave 0.9s ease-in-out infinite;
+}
+
+.animate-critical-shadow-pulse {
+  animation: critical-shadow-pulse 2s ease-in-out infinite;
+}
+
+/* Reduced motion: disable non-functional animations */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-scale-in,
+  .animate-slide-in-right,
+  .animate-radial-reveal,
+  .animate-shake,
+  .animate-bell-ring,
+  .animate-pop,
+  .animate-critical-shadow-pulse {
+    animation: none !important;
+  }
+}
+
+/* ---- Additional Keyframes ---- */
+
+@keyframes scan-line {
+  0% {
+    top: -2px;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.6);
+    opacity: 0.5;
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+}
+
+.animate-scan-line {
+  animation: scan-line 2.5s ease-in-out infinite;
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 2s ease-in-out infinite;
+}

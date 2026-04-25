@@ -1,0 +1,17 @@
+export const ROUTES = {
+  LOGIN: '/login',
+  DASHBOARD: '/',
+  PATIENTS: '/patients',
+  PATIENT_DETAIL: (id: string) => `/patients/${id}`,
+  PATIENT_NEW: '/patients/new',
+  CASES: '/cases',
+  CASE_NEW: '/cases/new',
+  CASE_DETAIL: (id: string) => `/cases/${id}`,
+  CASE_REPORT: (id: string) => `/cases/${id}/report`,
+  DISEASES: '/diseases',
+  DISEASE_DETAIL: (slug: string) => `/diseases/${slug}`,
+  ADMIN: '/admin',
+  ADMIN_CLINICS: '/admin/clinicis',
+  ADMIN_USERS: '/admin/users',
+  SETTINGS: '/settings',
+} as const
