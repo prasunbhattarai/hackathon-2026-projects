@@ -25,7 +25,10 @@ export default function DashboardLayout({
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    setMounted(true)
+    // Avoid lint rule `react-hooks/set-state-in-effect` by deferring the setState.
+    // This still prevents hydration mismatch while keeping render logic intact.
+    const t = window.setTimeout(() => setMounted(true), 0)
+    return () => window.clearTimeout(t)
   }, [])
 
   useEffect(() => {

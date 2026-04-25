@@ -38,9 +38,9 @@ const statusConfig: Record<
   },
   [CaseStatus.APPROVED]: {
     label: 'Approved',
-    bg: 'bg-teal-400/10',
-    text: 'text-teal-400',
-    border: 'border-teal-400/25',
+    bg: 'bg-[var(--success)]/10',
+    text: 'text-[var(--success)]',
+    border: 'border-[var(--success)]/25',
   },
   [CaseStatus.REJECTED]: {
     label: 'Rejected',
@@ -64,7 +64,7 @@ export const StatusChip = ({ status, className }: StatusChipProps) => {
       className={cn(
         'inline-flex items-center px-2 py-0.5',
         'text-[10px] font-condensed font-medium',
-        'rounded-[4px] border whitespace-nowrap',
+        'rounded-[999px] border whitespace-nowrap',
         cfg.bg,
         cfg.text,
         cfg.border,

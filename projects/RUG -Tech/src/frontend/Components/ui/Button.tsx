@@ -19,6 +19,7 @@ const variantStyles: Record<NonNullable<ButtonProps['variant']>, string> = {
     'bg-[var(--accent)] text-white',
     'hover:brightness-110',
     'active:scale-[0.98]',
+    'hover:shadow-[0_10px_30px_var(--accent-glow)]',
   ].join(' '),
   secondary: [
     'bg-transparent border border-[var(--border-strong)] text-[var(--text-primary)]',
@@ -113,8 +114,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           // Base
           'inline-flex items-center justify-center',
           'font-sans font-medium',
-          'rounded-[4px]',
-          'transition-all duration-150 ease-out',
+          'rounded-[10px]',
+          'transition-all duration-180 ease-out',
           'select-none cursor-pointer',
           'relative overflow-hidden',
           // Variant

@@ -3,6 +3,7 @@
 import { TrendingUp, Clock, AlertTriangle, XCircle } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { Skeleton } from '@/Components/ui/Skeleton'
+import { InteractiveCard } from '@/Components/ui/InteractiveCard'
 import type { DashboardStats } from '@/features/dashboard/hooks/useDashboardStats'
 
 interface StatCardProps {
@@ -15,13 +16,13 @@ interface StatCardProps {
 }
 
 const StatCard = ({ label, value, icon, accent, pulse, loading }: StatCardProps) => (
-  <div
+  <InteractiveCard
     className={cn(
       'bg-[var(--bg-surface)] border border-[var(--border)] rounded-[4px]',
-      'p-4 flex flex-col justify-between relative overflow-hidden',
+      'flex flex-col justify-between overflow-hidden',
     )}
   >
-    <div className="flex items-start justify-between">
+    <div className="flex items-start justify-between min-h-[60px]">
       {loading ? (
         <Skeleton className="h-8 w-16" />
       ) : (
@@ -36,11 +37,11 @@ const StatCard = ({ label, value, icon, accent, pulse, loading }: StatCardProps)
     {loading ? (
       <Skeleton className="h-3 w-24 mt-3" />
     ) : (
-      <span className="font-condensed text-xs text-[var(--text-muted)] mt-3">
+      <span className="font-condensed text-xs text-[var(--text-muted)] mt-5">
         {label}
       </span>
     )}
-  </div>
+  </InteractiveCard>
 )
 
 interface StatsGridProps {

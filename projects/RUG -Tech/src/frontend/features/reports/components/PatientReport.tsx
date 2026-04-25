@@ -17,14 +17,14 @@ const severityVisual: Record<string, {
 }> = {
   None: {
     icon: CheckCircle,
-    color: 'text-teal-400',
-    bgClass: 'bg-teal-400/10 border-teal-400/20',
+    color: 'text-[var(--success)]',
+    bgClass: 'bg-[var(--success)]/10 border-[var(--success)]/20',
     label: 'Good',
   },
   Mild: {
     icon: CheckCircle,
-    color: 'text-teal-400',
-    bgClass: 'bg-teal-400/10 border-teal-400/20',
+    color: 'text-[var(--success)]',
+    bgClass: 'bg-[var(--success)]/10 border-[var(--success)]/20',
     label: 'Good',
   },
   Moderate: {

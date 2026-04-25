@@ -56,7 +56,7 @@ export const DiagnosisResultPanel = ({
       </Card>
 
       {/* Severity Gauge */}
-      <Card>
+      {/* <Card>
         <CardContent>
           <p className="font-condensed font-medium text-[11px] uppercase tracking-[0.08em] text-[var(--text-muted)] mb-3">
             Severity Score
@@ -66,7 +66,7 @@ export const DiagnosisResultPanel = ({
             priorityScore={0.5}
           />
         </CardContent>
-      </Card>
+      </Card> */}
 
       {/* Disease Results */}
       <div>

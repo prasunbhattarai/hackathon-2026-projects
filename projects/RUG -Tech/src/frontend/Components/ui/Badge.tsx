@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { cn } from '@/lib/cn'
 
 export interface BadgeProps {
@@ -29,7 +28,7 @@ const variantStyles: Record<NonNullable<BadgeProps['variant']>, string> = {
   low: 'bg-[var(--sev-low)]/15 text-[var(--sev-low)] border border-[var(--sev-low)]/30',
   none: 'bg-[var(--sev-none)]/15 text-[var(--sev-none)]',
   info: 'bg-[var(--accent)]/15 text-[var(--accent)] border border-[var(--accent)]/30',
-  success: 'bg-teal-400/15 text-teal-400',
+  success: 'bg-[var(--success)]/15 text-[var(--success)] border border-[var(--success)]/30',
   outline:
     'bg-transparent border border-[var(--border-strong)] text-[var(--text-secondary)]',
   default: 'bg-[var(--bg-elevated)] text-[var(--text-secondary)]',
@@ -42,7 +41,7 @@ const dotColorMap: Record<NonNullable<BadgeProps['variant']>, string> = {
   low: 'bg-[var(--sev-low)]',
   none: 'bg-[var(--sev-none)]',
   info: 'bg-[var(--accent)]',
-  success: 'bg-teal-400',
+  success: 'bg-[var(--success)]',
   outline: 'bg-[var(--text-secondary)]',
   default: 'bg-[var(--text-secondary)]',
 }
@@ -59,20 +58,14 @@ export const Badge = ({
   children,
   className,
 }: BadgeProps) => {
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
   return (
     <span
       className={cn(
         'inline-flex items-center gap-1.5',
         'font-condensed font-medium',
-        'rounded-[4px] whitespace-nowrap',
+        'rounded-[999px] whitespace-nowrap',
         'uppercase tracking-[0.08em]',
-        mounted && 'animate-scale-in',
+        'animate-scale-in',
         variantStyles[variant],
         sizeStyles[size],
         className,

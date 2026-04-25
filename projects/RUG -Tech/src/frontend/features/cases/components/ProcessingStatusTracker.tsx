@@ -77,7 +77,7 @@ export const ProcessingStatusTracker = ({
   const statusIcon = (status: ProcessingStep['status']) => {
     switch (status) {
       case 'complete':
-        return <Check size={14} className="text-teal-400" strokeWidth={3} />
+        return <Check size={14} className="text-[var(--success)]" strokeWidth={3} />
       case 'active':
         return <Loader2 size={14} className="text-[var(--accent)] animate-spin" />
       case 'failed':
@@ -102,7 +102,7 @@ export const ProcessingStatusTracker = ({
                 className={cn(
                   'w-7 h-7 rounded-full flex items-center justify-center shrink-0',
                   'border transition-all duration-300',
-                  step.status === 'complete' && 'bg-teal-400/10 border-teal-400/30',
+                  step.status === 'complete' && 'bg-[var(--success)]/10 border-[var(--success)]/30',
                   step.status === 'active' && 'bg-[var(--accent)]/10 border-[var(--accent)]/30 shadow-[0_0_8px_var(--accent)/20]',
                   step.status === 'failed' && 'bg-[var(--sev-critical)]/10 border-[var(--sev-critical)]/30',
                   step.status === 'pending' && 'bg-[var(--bg-elevated)] border-[var(--border)]',
@@ -117,7 +117,7 @@ export const ProcessingStatusTracker = ({
                   <div
                     className={cn(
                       'w-full h-full transition-colors duration-500',
-                      step.status === 'complete' ? 'bg-teal-400/40' : 'bg-[var(--border)]',
+                      step.status === 'complete' ? 'bg-[var(--success)]/40' : 'bg-[var(--border)]',
                     )}
                   />
                 </div>

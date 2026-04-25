@@ -14,8 +14,8 @@ export interface ToastProps {
 const typeConfig = {
   success: {
     icon: CheckCircle,
-    stripColor: 'rgb(45, 212, 191)', // teal-400
-    iconColor: 'text-teal-400',
+    stripColor: 'var(--success)',
+    iconColor: 'text-[var(--success)]',
   },
   error: {
     icon: AlertCircle,

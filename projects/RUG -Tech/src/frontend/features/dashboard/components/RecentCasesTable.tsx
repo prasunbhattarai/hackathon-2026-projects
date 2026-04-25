@@ -1,53 +1,58 @@
-'use client'
+"use client";
 
-import { useRouter } from 'next/navigation'
-import { ExternalLink } from 'lucide-react'
-import { cn } from '@/lib/cn'
-import { ROUTES } from '@/constants/routes'
-import { Badge } from '@/Components/ui/Badge'
-import { Button } from '@/Components/ui/Button'
-import { SkeletonTableRow } from '@/Components/ui/Skeleton'
-import { StatusChip } from '@/Components/shared/StatusChip'
-import { SeverityBadge } from '@/Components/shared/SeverityBadge'
-import type { CaseSummary } from '@/types/case.types'
+import { useRouter } from "next/navigation";
+import { ExternalLink } from "lucide-react";
+import { cn } from "@/lib/cn";
+import { ROUTES } from "@/constants/routes";
+import { Badge } from "@/Components/ui/Badge";
+import { Button } from "@/Components/ui/Button";
+import { SkeletonTableRow } from "@/Components/ui/Skeleton";
+import { StatusChip } from "@/Components/shared/StatusChip";
+import { SeverityBadge } from "@/Components/shared/SeverityBadge";
+import type { CaseSummary } from "@/types/case.types";
 
 interface RecentCasesTableProps {
-  cases: CaseSummary[]
-  isLoading?: boolean
-  className?: string
+  cases: CaseSummary[];
+  isLoading?: boolean;
+  className?: string;
 }
 
 function formatDate(iso: string): string {
-  const d = new Date(iso)
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 const drVariant = (status: string) => {
   switch (status) {
-    case 'PDR': return 'critical' as const
-    case 'Severe': return 'high' as const
-    case 'Moderate': return 'medium' as const
-    case 'Mild': return 'low' as const
-    default: return 'none' as const
+    case "PDR":
+      return "critical" as const;
+    case "Severe":
+      return "high" as const;
+    case "Moderate":
+      return "medium" as const;
+    case "Mild":
+      return "low" as const;
+    default:
+      return "none" as const;
   }
-}
+};
 
 export const RecentCasesTable = ({
   cases,
   isLoading,
   className,
 }: RecentCasesTableProps) => {
-  const router = useRouter()
+  const router = useRouter();
 
   return (
     <div
       className={cn(
-        'bg-(--bg-surface) border border-(--border) rounded-[4px] overflow-hidden',
+        "bg-(--bg-surface) border border-(--border) rounded-[10px] overflow-hidden",
         className,
       )}
     >
       <div className="px-6 py-3 border-b border-[var(--border)]">
-        <h3 className="p-10! font-condensed font-medium text-[11px] uppercase tracking-[0.08em] text-[var(--text-muted)]">
+        <h3 className="font-condensed font-medium text-[11px] uppercase tracking-[0.08em] text-[var(--text-muted)]">
           Recent Cases
         </h3>
       </div>
@@ -56,16 +61,21 @@ export const RecentCasesTable = ({
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-[var(--bg-elevated)]">
-              {['Patient', 'Status', 'DR Status', 'Priority', 'Submitted', ''].map(
-                (h) => (
-                  <th
-                    key={h || 'action'}
-                    className="px-4 py-2.5 text-left font-condensed font-medium text-[11px] uppercase tracking-[0.08em] text-[var(--text-muted)]"
-                  >
-                    {h}
-                  </th>
-                ),
-              )}
+              {[
+                "Patient",
+                "Status",
+                "DR Status",
+                "Priority",
+                "Submitted",
+                "",
+              ].map((h) => (
+                <th
+                  key={h || "action"}
+                  className="px-4 py-2.5 text-left font-condensed font-medium text-[11px] uppercase tracking-[0.08em] text-[var(--text-muted)]"
+                >
+                  {h}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -104,8 +114,8 @@ export const RecentCasesTable = ({
                       size="sm"
                       rightIcon={<ExternalLink size={12} />}
                       onClick={(e: React.MouseEvent) => {
-                        e.stopPropagation()
-                        router.push(ROUTES.CASE_DETAIL(c.id))
+                        e.stopPropagation();
+                        router.push(ROUTES.CASE_DETAIL(c.id));
                       }}
                     >
                       View
@@ -117,5 +127,5 @@ export const RecentCasesTable = ({
         </table>
       </div>
     </div>
-  )
-}
+  );
+};

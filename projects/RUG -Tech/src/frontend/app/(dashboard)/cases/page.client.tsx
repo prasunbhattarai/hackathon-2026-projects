@@ -92,10 +92,10 @@ export default function CasesPageClient() {
               )}
               <div className="flex items-center gap-1.5">
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-400" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--success)] opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--success)]" />
                 </span>
-                <span className="text-[10px] font-condensed font-medium text-teal-400 uppercase tracking-wider">
+                <span className="text-[10px] font-condensed font-medium text-[var(--success)] uppercase tracking-wider">
                   Live
                 </span>
               </div>

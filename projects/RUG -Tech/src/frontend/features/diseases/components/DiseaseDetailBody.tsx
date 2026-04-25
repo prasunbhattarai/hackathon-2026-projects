@@ -132,7 +132,7 @@ export const DiseaseDetailBody = ({ disease, className }: DiseaseDetailBodyProps
       <Card>
         <CardContent>
           <div className="flex items-center gap-2 mb-4">
-            <Stethoscope size={16} className="text-teal-400" />
+            <Stethoscope size={16} className="text-[var(--success)]" />
             <h2 className="font-display text-lg text-[var(--text-primary)]">
               Treatment Options
             </h2>

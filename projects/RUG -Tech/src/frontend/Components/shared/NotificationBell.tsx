@@ -11,7 +11,7 @@ import { useNotificationStore, type Notification } from '@/store/notificationSto
 
 const typeColors: Record<Notification['type'], string> = {
   error: 'bg-[var(--sev-critical)]',
-  success: 'bg-teal-400',
+  success: 'bg-[var(--success)]',
   warning: 'bg-[var(--sev-high)]',
   info: 'bg-[var(--accent)]',
 }

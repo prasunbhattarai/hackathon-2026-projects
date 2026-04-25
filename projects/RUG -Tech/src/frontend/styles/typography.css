@@ -6,7 +6,7 @@
 /* Display — DM Serif Display */
 
 .t-display-xl {
-  font-family: 'DM Serif Display', serif;
+  font-family: 'Inter', sans-serif;
   font-size: 3rem;
   line-height: 1.1;
   letter-spacing: -0.025em;
@@ -14,7 +14,7 @@
 }
 
 .t-display-lg {
-  font-family: 'DM Serif Display', serif;
+  font-family: 'Inter', sans-serif;
   font-size: 2rem;
   line-height: 1.2;
   letter-spacing: -0.015em;
@@ -22,7 +22,7 @@
 }
 
 .t-display-md {
-  font-family: 'DM Serif Display', serif;
+  font-family: 'Inter', sans-serif;
   font-size: 1.5rem;
   line-height: 1.25;
   color: var(--text-primary);
@@ -31,43 +31,43 @@
 /* Headings & Subheadings — IBM Plex Sans */
 
 .t-heading {
-  font-family: 'IBM Plex Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 600;
   font-size: 1.25rem;
-  line-height: 1.4;
+  line-height: 1.35;
   color: var(--text-primary);
 }
 
 .t-subheading {
-  font-family: 'IBM Plex Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 500;
-  font-size: 1rem;
-  line-height: 1.5;
+  font-size: 0.9375rem;
+  line-height: 1.55;
   color: var(--text-secondary);
 }
 
 /* Body — IBM Plex Sans */
 
 .t-body {
-  font-family: 'IBM Plex Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 400;
-  font-size: 0.875rem;
-  line-height: 1.6;
+  font-size: 0.9375rem;
+  line-height: 1.7;
   color: var(--text-primary);
 }
 
 /* Caption & Label — IBM Plex Sans Condensed */
 
 .t-caption {
-  font-family: 'IBM Plex Sans Condensed', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 400;
-  font-size: 0.75rem;
-  line-height: 1.5;
+  font-size: 0.8125rem;
+  line-height: 1.55;
   color: var(--text-muted);
 }
 
 .t-label {
-  font-family: 'IBM Plex Sans Condensed', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 500;
   font-size: 0.6875rem;
   line-height: 1.4;

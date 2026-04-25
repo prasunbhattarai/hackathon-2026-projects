@@ -87,11 +87,11 @@ export const ImageQualityFeedback = ({
   if (quality === 'good') {
     return (
       <div className={cn('flex flex-col items-center justify-center gap-4 py-8', className)}>
-        <div className="w-16 h-16 rounded-full bg-teal-400/10 flex items-center justify-center">
-          <CheckCircle size={32} className="text-teal-400" />
+        <div className="w-16 h-16 rounded-full bg-[var(--success)]/10 flex items-center justify-center">
+          <CheckCircle size={32} className="text-[var(--success)]" />
         </div>
         <div className="text-center">
-          <p className="text-sm font-medium text-teal-400">
+          <p className="text-sm font-medium text-[var(--success)]">
             Image quality: Excellent
           </p>
           <p className="text-xs text-[var(--text-muted)] mt-1">
