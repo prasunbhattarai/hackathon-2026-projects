@@ -2,7 +2,8 @@
 
 import { cn } from '@/lib/cn'
 import { casesMock } from '@/mock/data/cases.mock'
-import { DonutChart } from '@/components/ui/donut-chart'
+import { DonutChart } from '@/Components/ui/donut-chart'
+import type { DonutChartSegment } from '@/Components/ui/donut-chart'
 import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 
@@ -18,7 +19,7 @@ const tiers = [
 ] as const
 
 export const TriageSummaryCard = ({ className }: TriageSummaryCardProps) => {
-  const [hoveredSegment, setHoveredSegment] = useState<any | null>(null)
+  const [hoveredSegment, setHoveredSegment] = useState<DonutChartSegment | null>(null)
 
   const { total, counts, chartData } = useMemo(() => {
     const total = casesMock.length
@@ -94,7 +95,7 @@ export const TriageSummaryCard = ({ className }: TriageSummaryCardProps) => {
               "flex items-center gap-2 p-1 rounded-md transition-colors duration-200",
               hoveredSegment?.label === t.label && "bg-muted"
             )}
-            onMouseEnter={() => setHoveredSegment(chartData.find(d => d.label === t.label))}
+            onMouseEnter={() => setHoveredSegment(chartData.find(d => d.label === t.label) ?? null)}
             onMouseLeave={() => setHoveredSegment(null)}
           >
             <span className={cn('w-2 h-2 rounded-full shrink-0', t.dot)} />

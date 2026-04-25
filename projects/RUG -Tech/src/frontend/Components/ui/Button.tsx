@@ -12,6 +12,7 @@ export interface ButtonProps
   leftIcon?: React.ReactNode
   rightIcon?: React.ReactNode
   as?: React.ElementType
+  href?: string
 }
 
 const variantStyles: Record<NonNullable<ButtonProps['variant']>, string> = {

@@ -2,14 +2,21 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get('fundus-access-token')?.value
-  const isAuthRoute = request.nextUrl.pathname.startsWith('/login')
-  const isDashboardRoute = !isAuthRoute
+  const { pathname } = request.nextUrl
+  const isAuthRoute = pathname.startsWith('/login')
 
-  if (isDashboardRoute && !token) {
+  const isPublicRoute =
+    pathname === '/' ||
+    pathname === '/about' ||
+    pathname === '/disease' ||
+    pathname === '/ai' ||
+    pathname === '/contact'
+
+  if (!isAuthRoute && !isPublicRoute && !token) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
   if (isAuthRoute && token) {
-    return NextResponse.redirect(new URL('/', request.url))
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 }
 

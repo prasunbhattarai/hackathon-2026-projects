@@ -1,6 +1,11 @@
 export const ROUTES = {
   LOGIN: '/login',
-  DASHBOARD: '/',
+  DASHBOARD: '/dashboard',
+  HOME: '/',
+  ABOUT: '/about',
+  DISEASE_PUBLIC: '/disease',
+  AI_PLATFORM: '/ai',
+  CONTACT: '/contact',
   PATIENTS: '/patients',
   PATIENT_DETAIL: (id: string) => `/patients/${id}`,
   PATIENT_NEW: '/patients/new',

@@ -8,7 +8,7 @@ export interface DonutChartSegment {
   value: number;
   color: string; // Should be a valid CSS color (e.g., hsl(var(--primary)))
   label: string;
-  [key: string]: any; // Allow other data
+  [key: string]: unknown; // Allow other data
 }
 
 interface DonutChartProps extends React.HTMLAttributes<HTMLDivElement> {
