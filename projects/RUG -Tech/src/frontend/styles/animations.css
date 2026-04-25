@@ -73,6 +73,98 @@
   }
 }
 
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-4px);
+  }
+  40% {
+    transform: translateX(4px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(3px);
+  }
+}
+
+@keyframes bell-ring {
+  0% {
+    transform: rotate(0deg);
+  }
+  10% {
+    transform: rotate(8deg);
+  }
+  20% {
+    transform: rotate(-8deg);
+  }
+  30% {
+    transform: rotate(8deg);
+  }
+  40% {
+    transform: rotate(-8deg);
+  }
+  50% {
+    transform: rotate(6deg);
+  }
+  60% {
+    transform: rotate(-6deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.8);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes border-flash-success {
+  0% {
+    box-shadow: 0 0 0 0 rgba(79, 142, 247, 0);
+  }
+  30% {
+    box-shadow: 0 0 0 1px rgba(79, 142, 247, 0.55);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(79, 142, 247, 0);
+  }
+}
+
+@keyframes dot-wave {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-1px);
+  }
+}
+
+@keyframes critical-shadow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(244, 91, 91, 0);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(244, 91, 91, 0.22);
+  }
+}
+
 /* ---- Utility Classes ---- */
 
 .animate-shimmer {
@@ -102,6 +194,45 @@
 
 .animate-radial-reveal {
   animation: radial-reveal 0.4s ease-out both;
+}
+
+.animate-shake {
+  animation: shake 0.35s ease-in-out both;
+}
+
+.animate-bell-ring {
+  transform-origin: 50% 10%;
+  animation: bell-ring 0.55s ease-in-out both;
+}
+
+.animate-pop {
+  animation: pop 0.18s ease-out both;
+}
+
+.animate-border-flash-success {
+  animation: border-flash-success 0.45s ease-out both;
+}
+
+.animate-dot-wave {
+  animation: dot-wave 0.9s ease-in-out infinite;
+}
+
+.animate-critical-shadow-pulse {
+  animation: critical-shadow-pulse 2s ease-in-out infinite;
+}
+
+/* Reduced motion: disable non-functional animations */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-scale-in,
+  .animate-slide-in-right,
+  .animate-radial-reveal,
+  .animate-shake,
+  .animate-bell-ring,
+  .animate-pop,
+  .animate-critical-shadow-pulse {
+    animation: none !important;
+  }
 }
 
 /* ---- Additional Keyframes ---- */

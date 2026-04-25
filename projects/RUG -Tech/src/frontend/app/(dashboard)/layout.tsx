@@ -20,17 +20,22 @@ export default function DashboardLayout({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const isAuth = useAuthStore((s) => s.isAuthenticated)
   const role = useAuthStore((s) => s.user?.role ?? null)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    if (!isAuthenticated) router.replace(ROUTES.LOGIN)
-  }, [isAuthenticated, router])
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (mounted && !isAuth) router.replace(ROUTES.LOGIN)
+  }, [mounted, isAuth, router])
 
   const isAdminRoute = useMemo(() => pathname?.startsWith('/admin'), [pathname])
   const hasAccess = !isAdminRoute || role === UserRole.SUPER_ADMIN
 
-  if (!isAuthenticated) return null
+  if (!mounted || !isAuth) return null
 
   return (
     <div className="flex h-screen bg-[var(--bg-base)] overflow-hidden">

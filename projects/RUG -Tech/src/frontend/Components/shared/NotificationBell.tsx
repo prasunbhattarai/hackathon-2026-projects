@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Bell, Check } from 'lucide-react'
 import { cn } from '@/lib/cn'
@@ -33,11 +33,29 @@ function timeAgo(date: Date): string {
 
 export const NotificationBell = () => {
   const [open, setOpen] = useState(false)
+  const [ring, setRing] = useState(false)
+  const [pop, setPop] = useState(false)
   const { notifications, unreadCount, markAllRead, markRead } =
     useNotificationStore()
+  const prevUnread = useRef(unreadCount)
 
   const close = useCallback(() => setOpen(false), [])
   const panelRef = useClickOutside<HTMLDivElement>(close)
+
+  useEffect(() => {
+    if (unreadCount > prevUnread.current) {
+      setRing(true)
+      setPop(true)
+      const t1 = window.setTimeout(() => setRing(false), 650)
+      const t2 = window.setTimeout(() => setPop(false), 220)
+      prevUnread.current = unreadCount
+      return () => {
+        window.clearTimeout(t1)
+        window.clearTimeout(t2)
+      }
+    }
+    prevUnread.current = unreadCount
+  }, [unreadCount])
 
   return (
     <div ref={panelRef} className="relative">
@@ -52,9 +70,16 @@ export const NotificationBell = () => {
         )}
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
       >
-        <Bell size={18} />
+        <span className={cn('inline-flex', ring && 'animate-bell-ring')}>
+          <Bell size={18} />
+        </span>
         {unreadCount > 0 && (
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[var(--sev-critical)] animate-pulse-glow" />
+          <span
+            className={cn(
+              'absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[var(--sev-critical)] animate-pulse-glow',
+              pop && 'animate-pop',
+            )}
+          />
         )}
       </button>
 

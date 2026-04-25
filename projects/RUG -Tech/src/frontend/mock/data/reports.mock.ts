@@ -17,7 +17,7 @@ function ageFromDob(dateOfBirth: string): number {
 
 const caseIdsWithAnalysis = Array.from(new Set(analysisResultsMock.map((item) => item.caseId)));
 
-export const reportBundlesMock: ReportBundle[] = caseIdsWithAnalysis.slice(0, 20).map((caseId, index) => {
+export const reportBundlesMock: ReportBundle[] = caseIdsWithAnalysis.map((caseId, index) => {
 	const caseRecord = casesMock.find((item) => item.id === caseId);
 	const analysis = analysisResultsMock.find((item) => item.caseId === caseId);
 
@@ -65,7 +65,7 @@ export const reportBundlesMock: ReportBundle[] = caseIdsWithAnalysis.slice(0, 20
 					? ["Optimize antihypertensive regimen", "Tight glycemic management", "Schedule specialist review"]
 					: ["Continue current systemic medications", "Lifestyle counseling", "Routine ophthalmic monitoring"],
 			ragJustification: analysis.ragJustification,
-			heatmapUrl: analysis.heatmapUrl ?? `/images/sample_fundus.jg`,
+			heatmapUrl: analysis.heatmapUrl ?? `/images/sample_fundus.jpg`,
 			generatedAt: analysis.createdAt,
 		},
 		patient: {

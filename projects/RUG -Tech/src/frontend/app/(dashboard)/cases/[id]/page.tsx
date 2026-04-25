@@ -3,8 +3,9 @@ import { casesMock } from '@/mock/data/cases.mock'
 import { patientsMock } from '@/mock/data/patients.mock'
 import CaseDetailPageClient from '@/app/(dashboard)/cases/[id]/page.client'
 
-export function generateMetadata({ params }: { params: { id: string } }): Metadata {
-  const id = params.id
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const resolvedParams = await params
+  const id = resolvedParams.id
   const caseRecord = casesMock.find((c) => c.id === id)
   const patientName = caseRecord
     ? patientsMock.find((p) => p.id === caseRecord.patientId)?.fullName
@@ -15,6 +16,7 @@ export function generateMetadata({ params }: { params: { id: string } }): Metada
   }
 }
 
-export default function CaseDetailPage({ params }: { params: { id: string } }) {
-  return <CaseDetailPageClient id={params.id} />
+export default async function CaseDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params
+  return <CaseDetailPageClient id={resolvedParams.id} />
 }

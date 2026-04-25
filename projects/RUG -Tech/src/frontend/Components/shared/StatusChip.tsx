@@ -70,8 +70,24 @@ export const StatusChip = ({ status, className }: StatusChipProps) => {
         cfg.border,
         className,
       )}
+      aria-label={`Case status: ${cfg.label}`}
     >
-      {cfg.label}
+      <span className="inline-flex items-center gap-1.5">
+        <span>{cfg.label}</span>
+        {status === CaseStatus.PROCESSING && (
+          <span className="inline-flex items-center gap-0.5">
+            <span className="w-1 h-1 rounded-full bg-current opacity-60 animate-dot-wave" />
+            <span
+              className="w-1 h-1 rounded-full bg-current opacity-60 animate-dot-wave"
+              style={{ animationDelay: '150ms' }}
+            />
+            <span
+              className="w-1 h-1 rounded-full bg-current opacity-60 animate-dot-wave"
+              style={{ animationDelay: '300ms' }}
+            />
+          </span>
+        )}
+      </span>
     </span>
   )
 }

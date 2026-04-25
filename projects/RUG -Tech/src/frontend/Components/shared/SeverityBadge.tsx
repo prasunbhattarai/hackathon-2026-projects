@@ -39,9 +39,11 @@ export const SeverityBadge = ({ tier, className }: SeverityBadgeProps) => {
         'inline-flex items-center px-2 py-0.5',
         'text-[10px] font-condensed font-medium',
         'rounded-[4px] border whitespace-nowrap',
+        tier === 'critical' && 'animate-critical-shadow-pulse',
         cfg.classes,
         className,
       )}
+      aria-label={`Severity: ${cfg.label}`}
     >
       {cfg.label}
     </span>

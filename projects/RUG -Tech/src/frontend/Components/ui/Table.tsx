@@ -39,7 +39,7 @@ export function Table<T>({
 }: TableProps<T>) {
   return (
     <div className={cn('w-full overflow-x-auto', className)}>
-      <table className="w-full border-collapse">
+      <table className="w-full border-collapse" role="grid" aria-label="Data table">
         <thead>
           <tr
             className={cn(
@@ -100,7 +100,14 @@ export function Table<T>({
                   'border-b border-[var(--border)]',
                   'transition-colors duration-100',
                   onRowClick &&
-                    'cursor-pointer hover:bg-[var(--bg-subtle)]',
+                    [
+                      'cursor-pointer hover:bg-[var(--bg-subtle)]',
+                      'relative overflow-hidden',
+                      'before:content-[\'\'] before:absolute before:left-0 before:top-0 before:bottom-0',
+                      'before:w-0 hover:before:w-[3px]',
+                      'before:bg-[var(--accent)] before:transition-all before:duration-100',
+                      'active:bg-[var(--accent)]/10',
+                    ].join(' '),
                 )}
               >
                 {columns.map((col) => (

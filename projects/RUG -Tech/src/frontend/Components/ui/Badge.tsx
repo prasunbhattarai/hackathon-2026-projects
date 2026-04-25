@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { cn } from '@/lib/cn'
 
 export interface BadgeProps {
@@ -58,12 +59,20 @@ export const Badge = ({
   children,
   className,
 }: BadgeProps) => {
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   return (
     <span
       className={cn(
         'inline-flex items-center gap-1.5',
         'font-condensed font-medium',
         'rounded-[4px] whitespace-nowrap',
+        'uppercase tracking-[0.08em]',
+        mounted && 'animate-scale-in',
         variantStyles[variant],
         sizeStyles[size],
         className,

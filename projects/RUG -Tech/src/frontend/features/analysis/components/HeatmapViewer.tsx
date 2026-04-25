@@ -57,14 +57,16 @@ export const HeatmapViewer = ({
           {heatmapUrl && !isProcessing && (
             <Image
               src={heatmapUrl}
-              alt="Heatmap overlay"
+              alt="Fundus image with Grad-CAM heatmap highlighting areas of concern"
               width={512}
               height={512}
               className={cn(
                 'absolute inset-0 w-full h-full object-contain',
                 'mix-blend-multiply',
-                'transition-opacity duration-500',
-                showHeatmap ? 'opacity-60' : 'opacity-0',
+                'transition-[opacity,clip-path] duration-[350ms,400ms] ease-out',
+                showHeatmap
+                  ? 'opacity-60 [clip-path:circle(100%_at_50%_50%)]'
+                  : 'opacity-0 [clip-path:circle(0%_at_50%_50%)]',
               )}
             />
           )}
@@ -94,6 +96,7 @@ export const HeatmapViewer = ({
                   ? 'bg-[var(--accent)]/80 text-white'
                   : 'bg-black/60 text-white/80 hover:bg-black/80',
               )}
+              aria-pressed={showHeatmap}
             >
               {showHeatmap ? <EyeOff size={12} /> : <Eye size={12} />}
               {showHeatmap ? 'Hide Heatmap' : 'Show Heatmap'}

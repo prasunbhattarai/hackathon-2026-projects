@@ -96,7 +96,7 @@ export const analysisResultsMock: AnalysisResult[] = Array.from({ length: 42 }, 
 				? "Prioritize in critical queue and perform OCT/IOP confirmation tests."
 				: "Continue scheduled follow-up with glycemic and blood pressure control counseling.",
 		ragJustification: ragJustifications[index % ragJustifications.length],
-		heatmapUrl: severityLevel >= 3 ? `/images/sample_fundus.jpg` : null,
+		heatmapUrl: severityLevel >= 3 ? `/images/sample_fundus2.jpg` : null,
 		severityLevel,
 		decisionConfidence: decisionConfidenceFromSeverity(severityLevel),
 		createdAt: createdAt.toISOString(),

@@ -1,6 +1,6 @@
 'use client'
 
-import { forwardRef } from 'react'
+import { forwardRef, useLayoutEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/cn'
 import { Spinner } from './Spinner'
 
@@ -58,10 +58,57 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ) => {
     const Component = as || 'button'
     const isDisabled = disabled || loading
+    const btnRef = useRef<HTMLButtonElement | null>(null)
+    const [fixedWidth, setFixedWidth] = useState<number | null>(null)
+
+    useLayoutEffect(() => {
+      if (!btnRef.current) return
+      if (loading) {
+        setFixedWidth(btnRef.current.getBoundingClientRect().width)
+      } else {
+        setFixedWidth(null)
+      }
+    }, [loading, children])
+
+    const createRipple = (e: React.MouseEvent<HTMLButtonElement>) => {
+      if (isDisabled) return
+      const el = e.currentTarget
+      const rect = el.getBoundingClientRect()
+      const size = Math.max(rect.width, rect.height) * 1.2
+      const x = e.clientX - rect.left - size / 2
+      const y = e.clientY - rect.top - size / 2
+
+      const ripple = document.createElement('span')
+      ripple.style.position = 'absolute'
+      ripple.style.left = `${x}px`
+      ripple.style.top = `${y}px`
+      ripple.style.width = `${size}px`
+      ripple.style.height = `${size}px`
+      ripple.style.borderRadius = '9999px'
+      ripple.style.background = 'rgba(255,255,255,0.30)'
+      ripple.style.pointerEvents = 'none'
+      ripple.style.transform = 'scale(0)'
+      ripple.style.opacity = '1'
+      ripple.style.transition = 'transform 450ms ease-out, opacity 450ms ease-out'
+      el.appendChild(ripple)
+
+      requestAnimationFrame(() => {
+        ripple.style.transform = 'scale(1)'
+        ripple.style.opacity = '0'
+      })
+
+      window.setTimeout(() => {
+        ripple.remove()
+      }, 480)
+    }
 
     return (
       <Component
-        ref={ref}
+        ref={(node: HTMLButtonElement | null) => {
+          btnRef.current = node
+          if (typeof ref === 'function') ref(node)
+          else if (ref) (ref as React.MutableRefObject<HTMLButtonElement | null>).current = node
+        }}
         className={cn(
           // Base
           'inline-flex items-center justify-center',
@@ -69,6 +116,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           'rounded-[4px]',
           'transition-all duration-150 ease-out',
           'select-none cursor-pointer',
+          'relative overflow-hidden',
           // Variant
           variantStyles[variant],
           // Size
@@ -76,22 +124,31 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           // States
           loading && 'pointer-events-none opacity-70',
           isDisabled && !loading && 'opacity-40 cursor-not-allowed',
+          variant === 'danger' &&
+            'hover:shadow-[0_0_8px_rgba(244,91,91,0.30)]',
           className,
         )}
         disabled={isDisabled}
+        style={fixedWidth ? { width: fixedWidth } : undefined}
+        onMouseDown={(e: React.MouseEvent<HTMLButtonElement>) => {
+          props.onMouseDown?.(e)
+          if (variant === 'primary') createRipple(e)
+        }}
         {...props}
       >
-        {loading ? (
-          <Spinner
-            size={size === 'lg' ? 'md' : 'sm'}
-            color={variant === 'primary' ? 'white' : 'accent'}
-          />
-        ) : (
-          leftIcon && <span className="shrink-0">{leftIcon}</span>
-        )}
-        {children}
-        {rightIcon && !loading && (
-          <span className="shrink-0">{rightIcon}</span>
+        <span className={cn('inline-flex items-center justify-center gap-inherit', loading && 'invisible')}>
+          {leftIcon && <span className="shrink-0">{leftIcon}</span>}
+          {children}
+          {rightIcon && <span className="shrink-0">{rightIcon}</span>}
+        </span>
+
+        {loading && (
+          <span className="absolute inset-0 flex items-center justify-center">
+            <Spinner
+              size={size === 'lg' ? 'md' : 'sm'}
+              color={variant === 'primary' ? 'white' : 'accent'}
+            />
+          </span>
         )}
       </Component>
     )

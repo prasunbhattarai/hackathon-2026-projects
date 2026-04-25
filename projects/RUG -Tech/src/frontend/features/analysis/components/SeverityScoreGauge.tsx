@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/cn'
 import type { SeverityLevel } from '@/types/analysis.types'
@@ -42,17 +42,11 @@ export const SeverityScoreGauge = ({
   priorityScore,
   className,
 }: SeverityScoreGaugeProps) => {
-  const [animatedAngle, setAnimatedAngle] = useState(0)
   const tier = tierFromLevel(severityLevel)
   const color = tierColor(tier)
 
   // Needle angle: map severity 1-4 to ~-80° to +80°
-  const targetAngle = ((severityLevel - 1) / 3) * 160 - 80
-
-  useEffect(() => {
-    const timer = setTimeout(() => setAnimatedAngle(targetAngle), 100)
-    return () => clearTimeout(timer)
-  }, [targetAngle])
+  const targetAngle = useMemo(() => ((severityLevel - 1) / 3) * 160 - 80, [severityLevel])
 
   const cx = 100
   const cy = 100
@@ -89,7 +83,7 @@ export const SeverityScoreGauge = ({
   })
 
   // Needle
-  const needleAngle = ((animatedAngle + 80) / 160) * 180 - 180
+  const needleAngle = ((targetAngle + 80) / 160) * 180 - 180
   const needleRad = (needleAngle * Math.PI) / 180
   const needleLen = 55
   const nx = cx + needleLen * Math.cos(needleRad)
@@ -120,7 +114,7 @@ export const SeverityScoreGauge = ({
           strokeLinecap="round"
           initial={{ x2: cx - needleLen, y2: cy }}
           animate={{ x2: nx, y2: ny }}
-          transition={{ duration: 1, ease: 'easeOut', delay: 0.3 }}
+          transition={{ type: 'spring', stiffness: 100, damping: 12, mass: 0.7 }}
         />
 
         {/* Center dot */}
