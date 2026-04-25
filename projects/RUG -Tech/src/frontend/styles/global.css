@@ -1,0 +1,7 @@
+/* ============================================================
+   Fundus AI — Global Style Imports (styles directory)
+   These are imported by the app's globals.css or layout.
+   ============================================================ */
+
+@import './animations.css';
+@import './typography.css';
