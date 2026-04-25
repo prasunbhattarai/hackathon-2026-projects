@@ -58,7 +58,7 @@ export const Modal = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
           {/* Backdrop */}
           <motion.div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
@@ -72,21 +72,30 @@ export const Modal = ({
           {/* Panel */}
           <motion.div
             className={cn(
-              'relative w-full mx-4',
+              'relative w-full',
               'bg-[var(--bg-elevated)] border border-[var(--border-strong)]',
-              'rounded-[4px] shadow-2xl',
-              'flex flex-col max-h-[85vh]',
+              'shadow-2xl',
+              'flex flex-col',
+              // Mobile: full-width bottom sheet
+              'rounded-t-xl sm:rounded-[4px]',
+              'max-h-[90vh] sm:max-h-[85vh]',
+              'sm:mx-4',
               sizeMap[size],
             )}
-            variants={modalVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
+            initial={{ opacity: 0, y: 100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 100 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
             aria-label={title}
           >
+            {/* Pull handle — mobile only */}
+            <div className="flex justify-center pt-2 pb-0 sm:hidden">
+              <div className="w-10 h-1 rounded-full bg-[var(--text-muted)]/30" />
+            </div>
+
             {/* Header */}
             {(title || description) && (
               <ModalHeader>
@@ -108,6 +117,7 @@ export const Modal = ({
                     'shrink-0 p-1.5 rounded-[4px]',
                     'text-[var(--text-muted)] hover:text-[var(--text-primary)]',
                     'hover:bg-[var(--bg-subtle)] transition-colors duration-150',
+                    'cursor-pointer',
                   )}
                   aria-label="Close"
                 >

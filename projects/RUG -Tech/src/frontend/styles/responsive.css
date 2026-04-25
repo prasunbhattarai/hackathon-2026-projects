@@ -1,0 +1,175 @@
+/* ============================================
+   Responsive Utilities — Fundus AI
+   ============================================ */
+
+/* ---------- Touch Targets ---------- */
+@media (pointer: coarse) {
+  button,
+  [role="button"],
+  a {
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+  }
+
+  /* Dropdown items on mobile */
+  select option,
+  [role="menuitem"] {
+    min-height: 44px;
+  }
+}
+
+/* ---------- Mobile-first Responsive Helpers ---------- */
+
+/* Hide on mobile, show on tablet+ */
+.desktop-only {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .desktop-only {
+    display: block;
+  }
+}
+
+/* Show on mobile, hide on tablet+ */
+.mobile-only {
+  display: block;
+}
+
+@media (min-width: 768px) {
+  .mobile-only {
+    display: none;
+  }
+}
+
+/* ---------- Responsive Table → Card Pattern ---------- */
+
+@media (max-width: 639px) {
+  .responsive-table thead {
+    display: none;
+  }
+
+  .responsive-table tbody tr {
+    display: flex;
+    flex-direction: column;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg-surface);
+  }
+
+  .responsive-table tbody td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.25rem 0;
+    border-bottom: none;
+  }
+
+  .responsive-table tbody td::before {
+    content: attr(data-label);
+    font-size: 0.625rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    margin-right: 0.5rem;
+  }
+}
+
+/* ---------- Responsive Grid Overrides ---------- */
+
+/* Stats grid: 2 cols on mobile */
+@media (max-width: 639px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* Chart section: stack on mobile */
+@media (max-width: 767px) {
+  .chart-section {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Tablet chart section: 2 cols */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .chart-section {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* ---------- Case Detail Responsive ---------- */
+
+/* Tablet: 50/50 split */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .case-detail-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+/* Mobile: stack */
+@media (max-width: 767px) {
+  .case-detail-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ---------- Compact List Item on Mobile ---------- */
+
+@media (max-width: 767px) {
+  .case-list-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+    padding: 0.75rem;
+  }
+
+  .case-list-item .case-thumbnail {
+    display: none;
+  }
+
+  .case-list-item .case-meta-secondary {
+    display: none;
+  }
+}
+
+/* ---------- Admin Table Column Hiding ---------- */
+
+@media (max-width: 1023px) {
+  .admin-table .col-hide-tablet {
+    display: none;
+  }
+}
+
+@media (max-width: 639px) {
+  .admin-table .col-hide-mobile {
+    display: none;
+  }
+}
+
+/* ---------- Form Responsive ---------- */
+
+@media (max-width: 639px) {
+  .form-grid-2col {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ---------- Toast Responsive ---------- */
+
+@media (max-width: 639px) {
+  .toast-container {
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+  }
+
+  .toast-container > * {
+    width: 100% !important;
+  }
+}
