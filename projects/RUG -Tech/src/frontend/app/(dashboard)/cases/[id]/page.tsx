@@ -96,7 +96,7 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
           transition={{ duration: 0.4, ease: 'easeOut', delay: 0.1 }}
         >
           {analysis ? (
-            <DiagnosisResultPanel analysis={analysis} />
+            <DiagnosisResultPanel analysis={analysis} caseId={id} />
           ) : (
             <div className="flex flex-col items-center justify-center py-16 bg-[var(--bg-surface)] border border-[var(--border)] rounded-[4px]">
               {isProcessing ? (

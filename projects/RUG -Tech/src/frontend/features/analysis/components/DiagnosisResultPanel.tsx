@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { FileText, Download, User } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { Button } from '@/Components/ui/Button'
@@ -7,10 +8,14 @@ import { Badge } from '@/Components/ui/Badge'
 import { Card, CardContent } from '@/Components/ui/Card'
 import { DiseaseConfidenceBlock } from './DiseaseConfidenceBlock'
 import { SeverityScoreGauge } from './SeverityScoreGauge'
+import { RAGJustificationCard } from './RAGJustificationCard'
+import { RecommendationCard } from './RecommendationCard'
 import type { AnalysisResult } from '@/types/analysis.types'
+import { ROUTES } from '@/constants/routes'
 
 export interface DiagnosisResultPanelProps {
   analysis: AnalysisResult
+  caseId?: string
   className?: string
 }
 
@@ -23,8 +28,11 @@ function decisionBadgeVariant(severity: number) {
 
 export const DiagnosisResultPanel = ({
   analysis,
+  caseId,
   className,
 }: DiagnosisResultPanelProps) => {
+  const router = useRouter()
+
   return (
     <div className={cn('flex flex-col gap-4', className)}>
       {/* Final Decision */}
@@ -73,28 +81,13 @@ export const DiagnosisResultPanel = ({
       </div>
 
       {/* RAG Justification */}
-      <Card>
-        <CardContent className="bg-[var(--accent)]/[0.03]">
-          <p className="font-condensed font-medium text-[11px] uppercase tracking-[0.08em] text-[var(--accent)] mb-2">
-            AI Justification
-          </p>
-          <p className="text-sm text-[var(--text-secondary)] italic leading-relaxed">
-            &ldquo;{analysis.ragJustification}&rdquo;
-          </p>
-        </CardContent>
-      </Card>
+      <RAGJustificationCard justification={analysis.ragJustification} />
 
       {/* Recommendation */}
-      <Card>
-        <CardContent>
-          <p className="font-condensed font-medium text-[11px] uppercase tracking-[0.08em] text-[var(--text-muted)] mb-2">
-            Recommendation
-          </p>
-          <p className="text-sm text-[var(--text-primary)] leading-relaxed">
-            {analysis.recommendation}
-          </p>
-        </CardContent>
-      </Card>
+      <RecommendationCard
+        recommendation={analysis.recommendation}
+        severityLevel={analysis.severityLevel}
+      />
 
       {/* Action buttons */}
       <div className="flex items-center gap-2 flex-wrap">
@@ -102,6 +95,7 @@ export const DiagnosisResultPanel = ({
           variant="secondary"
           size="md"
           leftIcon={<FileText size={14} />}
+          onClick={() => caseId && router.push(ROUTES.CASE_REPORT(caseId))}
         >
           View Doctor Report
         </Button>
@@ -109,6 +103,7 @@ export const DiagnosisResultPanel = ({
           variant="secondary"
           size="md"
           leftIcon={<User size={14} />}
+          onClick={() => caseId && router.push(ROUTES.CASE_REPORT(caseId))}
         >
           View Patient Report
         </Button>
