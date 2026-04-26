@@ -1,3 +1,0 @@
-Single-database Alembic configuration for FundusAI backend.
-
-Place migration files in alembic/versions.
