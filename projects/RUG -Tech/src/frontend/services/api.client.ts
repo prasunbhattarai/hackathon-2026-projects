@@ -82,6 +82,16 @@ async function routeMock<T>(
   }
 
   /* ---- Reports ---- */
+  if (endpoint.match(/^\/reports\/[\w-]+\/pdf$/) && method === 'GET') {
+    const caseId = endpoint.split('/')[2]!
+    const p = bodyOrParams as Record<string, string> | undefined
+    const type = (p?.type ?? 'general').toLowerCase()
+    const safeType = type === 'doctor' || type === 'patient' || type === 'general' ? type : 'general'
+    const url = `/mock/reports/mock-report.pdf?caseId=${encodeURIComponent(caseId)}&type=${safeType}`
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 10).toISOString()
+    return { success: true, data: { url, expiresAt } as T, error: null }
+  }
+
   if (endpoint.match(/^\/reports\/[\w-]+/) && method === 'GET') {
     const parts = endpoint.split('/')
     const caseId = parts[2]
@@ -93,6 +103,10 @@ async function routeMock<T>(
       return { success: true, data: bundleRes.data[reportType] as T, error: null }
     }
     return bundleRes as unknown as ApiResponse<T>
+  }
+
+  if (endpoint.match(/^\/reports\/[\w-]+\/share$/) && method === 'POST') {
+    return { success: true, data: { sent: true } as T, error: null }
   }
 
   /* ---- Fallback ---- */

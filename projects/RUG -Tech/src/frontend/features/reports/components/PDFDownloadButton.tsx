@@ -5,6 +5,9 @@ import { Download, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { Button } from '@/Components/ui/Button'
 import { Spinner } from '@/Components/ui/Spinner'
+import { useToast } from '@/hooks/useToast'
+import { getPDFDownloadUrl } from '@/services/report.service'
+import type { ReportType } from '@/types/report.types'
 
 export interface PDFDownloadButtonProps {
   caseId: string
@@ -12,15 +15,16 @@ export interface PDFDownloadButtonProps {
 }
 
 const options = [
-  { id: 'doctor', label: 'Doctor Report PDF' },
-  { id: 'patient', label: 'Patient Report PDF' },
-  { id: 'full', label: 'Full Report PDF' },
+  { id: 'doctor' as const, label: 'Doctor Report PDF', type: 'doctor' as const },
+  { id: 'patient' as const, label: 'Patient Report PDF', type: 'patient' as const },
+  { id: 'full' as const, label: 'Full Report PDF', type: 'general' as const },
 ]
 
 export const PDFDownloadButton = ({
   caseId,
   className,
 }: PDFDownloadButtonProps) => {
+  const { error } = useToast()
   const [isOpen, setIsOpen] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -35,16 +39,20 @@ export const PDFDownloadButton = ({
     return () => document.removeEventListener('mousedown', handle)
   }, [])
 
-  const handleDownload = async (type: string) => {
+  const handleDownload = async (type: ReportType) => {
     setIsDownloading(true)
     setIsOpen(false)
 
-    // Simulate PDF generation
-    await new Promise((r) => setTimeout(r, 1500))
-
-    // Mock: open a fake PDF URL
-    window.open(`https://example.com/reports/${caseId}/${type}.pdf`, '_blank')
-    setIsDownloading(false)
+    try {
+      const res = await getPDFDownloadUrl(caseId, type)
+      if (!res.success || !res.data?.url) {
+        error('Download failed', res.error?.message ?? 'Unable to get PDF URL.')
+        return
+      }
+      window.open(res.data.url, '_blank')
+    } finally {
+      setIsDownloading(false)
+    }
   }
 
   return (
@@ -72,7 +80,7 @@ export const PDFDownloadButton = ({
           {options.map((opt) => (
             <button
               key={opt.id}
-              onClick={() => handleDownload(opt.id)}
+              onClick={() => handleDownload(opt.type)}
               className={cn(
                 'w-full text-left px-3 py-2 text-sm',
                 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]',

@@ -1,11 +1,13 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { FileText, Download, User } from 'lucide-react'
+import { FileText, User } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { Button } from '@/Components/ui/Button'
 import { Badge } from '@/Components/ui/Badge'
 import { Card, CardContent } from '@/Components/ui/Card'
+import { PDFDownloadButton } from '@/features/reports/components/PDFDownloadButton'
+import { ShareReportButton } from '@/features/reports/components/ShareReportButton'
 import { DiseaseConfidenceBlock } from './DiseaseConfidenceBlock'
 import { SeverityScoreGauge } from './SeverityScoreGauge'
 import { RAGJustificationCard } from './RAGJustificationCard'
@@ -107,13 +109,8 @@ export const DiagnosisResultPanel = ({
         >
           View Patient Report
         </Button>
-        <Button
-          variant="ghost"
-          size="md"
-          leftIcon={<Download size={14} />}
-        >
-          Download PDF
-        </Button>
+        {caseId && <PDFDownloadButton caseId={caseId} />}
+        {caseId && <ShareReportButton caseId={caseId} />}
       </div>
     </div>
   )

@@ -1,4 +1,4 @@
-import { apiGet } from '@/services/api.client'
+import { apiGet, apiPost } from '@/services/api.client'
 import type { ApiResponse } from '@/types/api.types'
 import type {
   DoctorReport,
@@ -35,4 +35,12 @@ export async function getPDFDownloadUrl(
   type: ReportType,
 ): Promise<ApiResponse<PDFDownloadUrl>> {
   return apiGet<PDFDownloadUrl>(`/reports/${caseId}/pdf`, { type })
+}
+
+/** Ask backend to share a case report to a patient email */
+export async function shareReportToPatient(
+  caseId: string,
+  email: string,
+): Promise<ApiResponse<{ sent: boolean }>> {
+  return apiPost<{ sent: boolean }>(`/reports/${caseId}/share`, { email })
 }
