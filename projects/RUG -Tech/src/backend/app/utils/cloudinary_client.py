@@ -57,6 +57,25 @@ def upload_image(file: UploadFile, folder: str = "fundusai/fundus") -> dict:
     return result
 
 
+def upload_local_file(file_path: "Path", folder: str = "fundusai/heatmaps") -> dict:
+    """
+    Upload a local image file (e.g. AI-generated heatmap) to Cloudinary.
+
+    Returns the Cloudinary upload result dict (keys: secure_url, public_id, …).
+    The caller is responsible for deleting the local file afterwards.
+    """
+    from pathlib import Path as _Path  # local import avoids circular at module level
+
+    _configure()
+    with open(_Path(file_path), "rb") as fh:
+        result = cloudinary.uploader.upload(
+            fh,
+            folder=folder,
+            resource_type="image",
+        )
+    return result
+
+
 def delete_image(public_id: str) -> dict:
     """
     Delete an image from Cloudinary by its public_id.

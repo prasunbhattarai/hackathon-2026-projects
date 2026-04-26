@@ -32,6 +32,7 @@ class ImageQuality(str, Enum):
     BLURRY = "blurry"
     POOR_LIGHTING = "poor_lighting"
     OVEREXPOSED = "overexposed"
+    NON_FUNDUS = "non_fundus"
 
 
 class PriorityTier(str, Enum):

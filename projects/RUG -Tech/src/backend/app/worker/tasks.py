@@ -6,15 +6,12 @@ Task: run_analysis
 Triggered by case_service.upload_case after the image is stored on Cloudinary.
 
 Pipeline stages (executed inside the worker process, not the API process):
-  1. Download image bytes from Cloudinary URL
-  2. Run AI inference (DR + Glaucoma + HR models)
-  3. Compute priority score / tier
-  4. Persist AnalysisResult + update Case status → AWAITING_REVIEW
-  5. On any failure → update Case status → FAILED
-
-Because the AI inference modules are still being trained, this task ships
-with a *simulated* pipeline that produces realistic dummy outputs.
-When the real inference module is ready, replace the `_run_inference` call.
+    1. Download image bytes from storage URL
+    2. Run backend quality gate (when available)
+    3. Run AI inference (DR + Glaucoma + HR models)
+    4. Persist AnalysisResult + update Case status → AWAITING_REVIEW
+    5. Auto-generate doctor/patient reports + PDFs
+    6. On any failure → update Case status → FAILED
 """
 
 from __future__ import annotations
@@ -29,11 +26,16 @@ from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
 from app.models.analysis_result import AnalysisResult
 from app.models.case import Case
+from app.services import report_service
+from app.services.ai_integration import (
+    AIIntegrationError,
+    AIQualityRejectedError,
+    run_backend_ai_pipeline,
+    serialize_for_logs,
+)
 from app.schemas.enums import (
     CaseStatus,
-    DecisionConfidence,
     DRStatus,
-    ImageQuality,
     PriorityTier,
     RiskLevel,
 )
@@ -83,60 +85,6 @@ def _compute_priority(result: dict[str, Any]) -> tuple[float, str]:
     return score, tier
 
 
-# ── simulated inference ────────────────────────────────────────────────────────
-
-
-def _run_inference(image_url: str) -> dict[str, Any]:
-    """
-    Simulated AI inference — returns realistic but deterministic-ish outputs.
-    Replace this function body with real model calls in the AI integration PR.
-    """
-    # Determinism: hash the URL so the same image always produces the same result
-    seed = hash(image_url) % 1000
-
-    dr_options = [DRStatus.NONE, DRStatus.MILD, DRStatus.MODERATE, DRStatus.SEVERE, DRStatus.PDR]
-    risk_options = [RiskLevel.LOW, RiskLevel.MEDIUM, RiskLevel.HIGH]
-
-    dr_status = dr_options[seed % len(dr_options)].value
-    glaucoma_risk = risk_options[(seed // 5) % len(risk_options)].value
-    hr_risk = risk_options[(seed // 7) % len(risk_options)].value
-
-    dr_confidence = round(0.60 + (seed % 40) / 100, 2)
-    glaucoma_confidence = round(0.55 + (seed % 45) / 100, 2)
-    hr_confidence = round(0.50 + (seed % 50) / 100, 2)
-
-    if dr_status in (DRStatus.SEVERE.value, DRStatus.PDR.value):
-        recommendation = "Urgent ophthalmology referral recommended. Proliferative or severe non-proliferative DR detected."
-        final_decision = "High risk — immediate specialist review required"
-        decision_confidence = DecisionConfidence.CLEAR.value
-    elif glaucoma_risk == RiskLevel.HIGH.value:
-        recommendation = "Glaucoma screening and intraocular pressure measurement advised."
-        final_decision = "Elevated glaucoma risk detected"
-        decision_confidence = DecisionConfidence.SUSPICIOUS.value
-    elif dr_status == DRStatus.NONE.value and glaucoma_risk == RiskLevel.LOW.value and hr_risk == RiskLevel.LOW.value:
-        recommendation = "No significant findings. Routine follow-up in 12 months."
-        final_decision = "No significant pathology detected"
-        decision_confidence = DecisionConfidence.CLEAR.value
-    else:
-        recommendation = "Mild abnormalities detected. Follow-up in 6 months recommended."
-        final_decision = "Mild findings — monitor and follow up"
-        decision_confidence = DecisionConfidence.UNCERTAIN.value
-
-    return {
-        "dr_status": dr_status,
-        "dr_confidence": dr_confidence,
-        "dr_severity_level": dr_status,
-        "glaucoma_risk": glaucoma_risk,
-        "glaucoma_confidence": glaucoma_confidence,
-        "hr_risk": hr_risk,
-        "hr_confidence": hr_confidence,
-        "final_decision": final_decision,
-        "recommendation": recommendation,
-        "rag_justification": "Simulated RAG context: clinical guidelines indicate timely referral for DR grade ≥ Severe.",
-        "decision_confidence": decision_confidence,
-    }
-
-
 # ── celery task ────────────────────────────────────────────────────────────────
 
 
@@ -171,11 +119,29 @@ def run_analysis(self: Task, case_id: str) -> dict[str, Any]:
             logger.info("run_analysis: case %s already %s, skipping", case_id, case.status)
             return {"status": "skipped", "reason": f"already_{case.status}"}
 
-        # ── image quality check (simple: always GOOD for now) ──────────────
-        image_quality = ImageQuality.GOOD.value
-
-        # ── run inference ──────────────────────────────────────────────────
-        inference = _run_inference(case.image_url)
+        # ── run quality gate + real inference ─────────────────────────────
+        try:
+            inference = run_backend_ai_pipeline(case.image_url)
+        except AIQualityRejectedError as quality_exc:
+            case.status = CaseStatus.QUALITY_FAILED.value
+            case.image_quality = quality_exc.image_quality
+            case.priority_score = 0.0
+            case.priority_tier = PriorityTier.LOW.value
+            db.commit()
+            logger.info(
+                "run_analysis: quality rejected — case_id=%s quality=%s reason=%s",
+                case_id,
+                quality_exc.image_quality,
+                quality_exc.reason,
+            )
+            return {
+                "status": "quality_failed",
+                "case_id": case_id,
+                "image_quality": quality_exc.image_quality,
+                "reason": quality_exc.reason,
+            }
+        except AIIntegrationError:
+            raise
 
         # ── compute priority ───────────────────────────────────────────────
         priority_score, priority_tier = _compute_priority(inference)
@@ -194,6 +160,7 @@ def run_analysis(self: Task, case_id: str) -> dict[str, Any]:
             final_decision=inference["final_decision"],
             recommendation=inference["recommendation"],
             rag_justification=inference["rag_justification"],
+            heatmap_url=inference.get("heatmap_url"),
             decision_confidence=inference["decision_confidence"],
             severity_level=inference["dr_severity_level"],
         )
@@ -201,17 +168,33 @@ def run_analysis(self: Task, case_id: str) -> dict[str, Any]:
 
         # ── update case ────────────────────────────────────────────────────
         case.status = CaseStatus.AWAITING_REVIEW.value
-        case.image_quality = image_quality
+        case.image_quality = inference["image_quality"]
         case.priority_score = priority_score
         case.priority_tier = priority_tier
 
         db.commit()
 
+        # ── auto-generate reports right after successful inference ────────
+        try:
+            report_service.generate_reports_for_case(
+                db,
+                str(case.id),
+                patient_report_json=inference.get("patient_report_json"),
+            )
+        except Exception as report_exc:
+            # Keep analysis successful even if report generation is temporarily unavailable.
+            logger.warning(
+                "run_analysis: report generation failed — case_id=%s error=%s",
+                case_id,
+                report_exc,
+            )
+
         logger.info(
-            "run_analysis: complete — case_id=%s priority=%s tier=%s",
+            "run_analysis: complete — case_id=%s priority=%s tier=%s inference=%s",
             case_id,
             priority_score,
             priority_tier,
+            serialize_for_logs(inference),
         )
         return {
             "status": "complete",
@@ -219,6 +202,7 @@ def run_analysis(self: Task, case_id: str) -> dict[str, Any]:
             "priority_score": priority_score,
             "priority_tier": priority_tier,
             "dr_status": inference["dr_status"],
+            "image_quality": inference["image_quality"],
         }
 
     except Exception as exc:
