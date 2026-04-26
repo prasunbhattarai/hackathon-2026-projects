@@ -57,7 +57,7 @@ def me(current_user: CurrentUser) -> ApiResponse[UserOut]:
         isActive=current_user.is_active,
         createdAt=current_user.created_at.isoformat(),
     )
-    return ApiResponse.ok(out)
+    return ApiResponse(data=out)
 
 
 @router.post(
@@ -70,7 +70,7 @@ def refresh(
     db: Session = Depends(get_db),
 ) -> ApiResponse[RefreshResponse]:
     result = auth_service.refresh(db, body.refreshToken)
-    return ApiResponse.ok(result)
+    return ApiResponse(data=result)
 
 
 @router.post(
@@ -82,5 +82,5 @@ def logout(
     credentials: Annotated[HTTPAuthorizationCredentials, Security(_bearer)],
 ) -> ApiResponse[LogoutResponse]:
     result = auth_service.logout(credentials.credentials)
-    return ApiResponse.ok(result)
+    return ApiResponse(data=result)
 
