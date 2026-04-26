@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, date, datetime, timedelta
+from typing import Any
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
@@ -215,19 +216,40 @@ def _load_case_and_analysis(db: Session, user: User, case_id: str) -> tuple[Case
     return case, patient, analysis
 
 
-def generate_report(
+def _create_report_record(
     db: Session,
-    user: User,
-    case_id: str,
+    case: Case,
+    patient: Patient,
+    analysis: AnalysisResult,
     report_type: ReportType,
+    patient_report_json: dict[str, Any] | None = None,
 ) -> ReportOut:
-    case, patient, analysis = _load_case_and_analysis(db, user, case_id)
     generated_at = datetime.now(UTC)
 
     if report_type == ReportType.DOCTOR:
         report_data = _build_doctor_report(patient, analysis, generated_at)
     else:
-        report_data = _build_patient_report(analysis, generated_at)
+        base_patient_report = _build_patient_report(analysis, generated_at)
+        if patient_report_json:
+            report_data = PatientReportOut(
+                reportType=ReportType.PATIENT,
+                summary=str(patient_report_json.get("summary") or base_patient_report.summary),
+                whatWasFound=str(
+                    patient_report_json.get("whatWasFound")
+                    or patient_report_json.get("risk")
+                    or base_patient_report.whatWasFound
+                ),
+                nextSteps=str(
+                    patient_report_json.get("nextSteps")
+                    or patient_report_json.get("recommendation")
+                    or base_patient_report.nextSteps
+                ),
+                severityLabel=base_patient_report.severityLabel,
+                urgency=base_patient_report.urgency,
+                generatedAt=base_patient_report.generatedAt,
+            )
+        else:
+            report_data = base_patient_report
 
     payload = report_data.model_dump()
     pdf_bytes = _render_pdf_bytes(report_type, payload)
@@ -259,6 +281,70 @@ def generate_report(
     db.refresh(report)
 
     return _to_report_out(report)
+
+
+def generate_report(
+    db: Session,
+    user: User,
+    case_id: str,
+    report_type: ReportType,
+) -> ReportOut:
+    case, patient, analysis = _load_case_and_analysis(db, user, case_id)
+    return _create_report_record(db, case, patient, analysis, report_type)
+
+
+def generate_reports_for_case(
+    db: Session,
+    case_id: str,
+    patient_report_json: dict[str, Any] | None = None,
+) -> list[ReportOut]:
+    """Worker-friendly report generation after successful inference."""
+    case = db.get(Case, uuid.UUID(case_id))
+    if case is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+
+    if case.status not in _ALLOWED_REPORT_STATUSES:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Report is only available after case review starts.",
+        )
+
+    patient = db.get(Patient, case.patient_id)
+    if patient is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
+
+    analysis = db.execute(
+        select(AnalysisResult).where(AnalysisResult.case_id == case.id)
+    ).scalar_one_or_none()
+    if analysis is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No analysis result available for this case",
+        )
+
+    outputs: list[ReportOut] = []
+    for report_type in (ReportType.DOCTOR, ReportType.PATIENT):
+        existing = db.execute(
+            select(Report)
+            .where(Report.case_id == case.id, Report.report_type == report_type.value)
+            .order_by(Report.created_at.desc())
+        ).scalar_one_or_none()
+        if existing is not None:
+            outputs.append(_to_report_out(existing))
+            continue
+
+        outputs.append(
+            _create_report_record(
+                db=db,
+                case=case,
+                patient=patient,
+                analysis=analysis,
+                report_type=report_type,
+                patient_report_json=patient_report_json if report_type == ReportType.PATIENT else None,
+            )
+        )
+
+    return outputs
 
 
 def get_report(

@@ -25,6 +25,15 @@ class Settings(BaseSettings):
 
     PDF_DOWNLOAD_EXPIRY_SECONDS: int = 3600
 
+    # AI integration settings (backend orchestrates calls into ../ai)
+    AI_ENABLE_QUALITY_GATE: bool = True
+    AI_QUALITY_GATE_MODULE: str = "preprocessing.quality"
+    AI_QUALITY_GATE_FUNCTION: str = "run_quality_check"
+    AI_ENABLE_GEMINI_REPORT: bool = True
+    # Post-prediction non-fundus rejection: if all 3 disease probabilities are
+    # below this threshold the image is treated as a non-fundus / ineligible image.
+    AI_NON_FUNDUS_THRESHOLD: float = 0.1
+
     CORS_ORIGINS: list[str] = ["http://localhost:3000"]
 
     model_config = SettingsConfigDict(
