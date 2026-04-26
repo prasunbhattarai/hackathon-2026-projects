@@ -11,7 +11,12 @@ export const enum CaseStatus {
   FAILED = "failed",
 }
 
-export type ImageQuality = "good" | "blurry" | "poor_lighting" | "overexposed";
+export type ImageQuality =
+  | "good"
+  | "blurry"
+  | "poor_lighting"
+  | "overexposed"
+  | "non_fundus";
 export type PriorityTier = "critical" | "high" | "medium" | "low";
 
 export interface CaseRecord {

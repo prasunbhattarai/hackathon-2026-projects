@@ -50,11 +50,16 @@ export const reportBundlesMock: ReportBundle[] = caseIdsWithAnalysis.map(
         .map((item) => item.createdAt)
         .sort((a, b) => b.localeCompare(a))[0] ?? caseRecord.createdAt;
 
-    const severityText = analysis.dr.status;
+    const drStatus =
+      typeof (analysis.dr as { status?: unknown } | undefined)?.status === "string"
+        ? ((analysis.dr as { status: string }).status)
+        : "Unknown";
+    const severityText = drStatus;
+    const severityLevel = analysis.severityLevel ?? 1;
     const urgency =
-      analysis.severityLevel >= 4
+      severityLevel >= 4
         ? "Urgent"
-        : analysis.severityLevel === 3
+        : severityLevel === 3
           ? "Priority"
           : "Routine";
 
@@ -67,16 +72,16 @@ export const reportBundlesMock: ReportBundle[] = caseIdsWithAnalysis.map(
           gender: patient.gender,
         },
         diagnosis: {
-          primary: `Diabetic Retinopathy - ${analysis.dr.status}`,
+          primary: `Diabetic Retinopathy - ${drStatus}`,
           severity: severityText,
-          confidence: `${Math.round(analysis.dr.confidence * 100)}%`,
+          confidence: `${Math.round(((analysis.dr as { confidence?: number } | undefined)?.confidence ?? 0) * 100)}%`,
         },
         planOfAction:
-          analysis.severityLevel >= 4
+          severityLevel >= 4
             ? "Refer to retina specialist and complete intervention workup within 48 hours."
             : "Maintain periodic retinal follow-up with blood pressure and glucose control review.",
         medicationSuggestions:
-          analysis.severityLevel >= 3
+          severityLevel >= 3
             ? [
                 "Optimize antihypertensive regimen",
                 "Tight glycemic management",
@@ -87,7 +92,7 @@ export const reportBundlesMock: ReportBundle[] = caseIdsWithAnalysis.map(
                 "Lifestyle counseling",
                 "Routine ophthalmic monitoring",
               ],
-        ragJustification: analysis.ragJustification,
+        ragJustification: analysis.ragJustification ?? "",
         heatmapUrl: analysis.heatmapUrl ?? `/images/sample_fundus.jpg`,
         generatedAt: analysis.createdAt,
       },
@@ -95,9 +100,9 @@ export const reportBundlesMock: ReportBundle[] = caseIdsWithAnalysis.map(
         reportType: "patient",
         summary:
           "Your retinal scan was analyzed using an AI screening model and reviewed for disease risk.",
-        whatWasFound: `Findings are most consistent with ${analysis.dr.status} diabetic eye change and ${analysis.glaucoma.risk.toLowerCase()} glaucoma risk.`,
+        whatWasFound: `Findings are most consistent with ${drStatus} diabetic eye change and ${String((analysis.glaucoma as { risk?: unknown } | undefined)?.risk ?? "Low").toLowerCase()} glaucoma risk.`,
         nextSteps:
-          analysis.severityLevel >= 4
+          severityLevel >= 4
             ? "Please visit the retina specialist as soon as possible for detailed treatment planning."
             : "Follow your regular eye check-up schedule and continue your current treatment plan.",
         severityLabel: severityText,

@@ -11,7 +11,7 @@ async function mockDelay(ms = Math.random() * 600 + 200): Promise<void> {
 
 /** Route mock calls to the appropriate handler based on endpoint pattern */
 async function routeMock<T>(
-  method: "GET" | "POST" | "PUT" | "UPLOAD",
+  method: "GET" | "POST" | "PUT" | "PATCH" | "UPLOAD",
   endpoint: string,
   bodyOrParams?: unknown,
 ): Promise<ApiResponse<T>> {
@@ -89,7 +89,9 @@ async function routeMock<T>(
     let patientId = "patient-001";
     if (bodyOrParams instanceof FormData) {
       patientId =
-        (bodyOrParams as FormData).get("patientId")?.toString() ?? patientId;
+        (bodyOrParams as FormData).get("patient_id")?.toString() ??
+        (bodyOrParams as FormData).get("patientId")?.toString() ??
+        patientId;
     }
     return uploadCaseMock(patientId) as Promise<ApiResponse<T>>;
   }
@@ -156,9 +158,7 @@ function resolveApiBase(): string {
 
 const API_BASE = resolveApiBase();
 
-async function handle401AndRetry<T>(
-  original: () => Promise<Response>,
-): Promise<ApiResponse<T>> {
+async function handle401AndRetry<T>(): Promise<ApiResponse<T>> {
   // Backend refresh requires a refresh token, which we don't persist client-side yet.
   // For now: force logout on 401 to keep client consistent with server.
   const state = useAuthStore.getState();
@@ -203,7 +203,7 @@ export async function apiGet<T>(
   const url = buildUrl(endpoint, params);
   const doFetch = () => fetch(url.toString(), { headers: authHeaders() });
   const res = await doFetch();
-  if (res.status === 401) return handle401AndRetry<T>(doFetch);
+  if (res.status === 401) return handle401AndRetry<T>();
   return res.json();
 }
 
@@ -222,7 +222,7 @@ export async function apiPost<T>(
       body: JSON.stringify(body),
     });
   const res = await doFetch();
-  if (res.status === 401) return handle401AndRetry<T>(doFetch);
+  if (res.status === 401) return handle401AndRetry<T>();
   return res.json();
 }
 
@@ -231,7 +231,7 @@ export async function apiPatch<T>(
   endpoint: string,
   body: unknown,
 ): Promise<ApiResponse<T>> {
-  if (USE_MOCK) return routeMock<T>("POST", endpoint, body);
+  if (USE_MOCK) return routeMock<T>("PATCH", endpoint, body);
 
   const url = buildUrl(endpoint);
   const doFetch = () =>
@@ -241,7 +241,7 @@ export async function apiPatch<T>(
       body: JSON.stringify(body),
     });
   const res = await doFetch();
-  if (res.status === 401) return handle401AndRetry<T>(doFetch);
+  if (res.status === 401) return handle401AndRetry<T>();
   return res.json();
 }
 
@@ -260,7 +260,7 @@ export async function apiPut<T>(
       body: JSON.stringify(body),
     });
   const res = await doFetch();
-  if (res.status === 401) return handle401AndRetry<T>(doFetch);
+  if (res.status === 401) return handle401AndRetry<T>();
   return res.json();
 }
 
@@ -279,6 +279,6 @@ export async function apiUpload<T>(
       body: formData,
     });
   const res = await doFetch();
-  if (res.status === 401) return handle401AndRetry<T>(doFetch);
+  if (res.status === 401) return handle401AndRetry<T>();
   return res.json();
 }

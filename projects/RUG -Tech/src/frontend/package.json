@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "verify:api-contracts": "node scripts/verify-api-contracts.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.100.1",

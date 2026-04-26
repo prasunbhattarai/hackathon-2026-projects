@@ -12,6 +12,7 @@ from typing import Any
 
 import httpx
 from fastapi import HTTPException, status
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.models.user import User
@@ -53,12 +54,28 @@ def _upsert_user(db: Session, supabase_user: dict[str, Any]) -> User:
 
     user = db.get(User, user_id)
     if user is None:
+        # Check if an admin pre-created this user by email
+        existing_user = db.execute(select(User).where(User.email == email)).scalar_one_or_none()
+
         user = User(
             id=user_id,
             email=email,
             full_name=full_name or None,
             role=role,
         )
+
+        if existing_user:
+            user.clinic_id = existing_user.clinic_id
+            user.is_active = existing_user.is_active
+            
+            # Transfer ownership of any seeded cases/patients before deleting the old row
+            from app.models.case import Case
+            from app.models.patient import Patient
+            db.execute(update(Case).where(Case.submitted_by == existing_user.id).values(submitted_by=user_id))
+            db.execute(update(Patient).where(Patient.created_by == existing_user.id).values(created_by=user_id))
+            
+            db.delete(existing_user)
+
         db.add(user)
     else:
         # Keep email in sync; don't overwrite role if already set in DB

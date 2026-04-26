@@ -55,6 +55,9 @@ export function ShareReportButton({ caseId, className }: ShareReportButtonProps)
 
       success('Report shared', `Sent to ${nextEmail}`)
       close()
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unable to send report email.'
+      error('Share failed', message)
     } finally {
       setIsSending(false)
     }

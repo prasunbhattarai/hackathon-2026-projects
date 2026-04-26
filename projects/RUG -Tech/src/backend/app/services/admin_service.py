@@ -108,6 +108,11 @@ def create_user(db: Session, data: CreateUserRequest) -> UserOut:
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Only doctor accounts can be created from this endpoint",
         )
+    if not data.clinicId:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="clinicId is required when creating doctor accounts",
+        )
 
     existing = db.execute(select(User).where(User.email == data.email)).scalar_one_or_none()
     if existing:

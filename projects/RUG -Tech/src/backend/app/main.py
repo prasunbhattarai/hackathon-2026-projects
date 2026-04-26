@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 
 from app.api.router import api_router
 from app.core.config import settings
@@ -26,5 +28,10 @@ app.add_middleware(
 
 register_app_middleware(app)
 register_exception_handlers(app)
+
+# Serve local uploads (and other static assets) under /static/*
+static_root = Path(__file__).resolve().parent / "static"
+static_root.mkdir(parents=True, exist_ok=True)
+app.mount("/static", StaticFiles(directory=str(static_root)), name="static")
 
 app.include_router(api_router, prefix=settings.API_V1_PREFIX)

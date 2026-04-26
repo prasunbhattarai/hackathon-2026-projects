@@ -49,6 +49,9 @@ export const PDFDownloadButton = ({
         return
       }
       window.open(res.data.url, '_blank')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unable to get PDF URL.'
+      error('Download failed', message)
     } finally {
       setIsDownloading(false)
     }

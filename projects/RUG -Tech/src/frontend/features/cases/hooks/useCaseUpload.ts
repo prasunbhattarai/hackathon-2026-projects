@@ -6,6 +6,7 @@ import type { Patient } from '@/types/patient.types'
 import type { ImageQuality } from '@/types/case.types'
 import { ROUTES } from '@/constants/routes'
 import { useNotificationStore } from '@/store/notificationStore'
+import * as caseService from '@/services/case.service'
 
 export type UploadStep =
   | 'select_patient'
@@ -91,9 +92,8 @@ export function useCaseUpload() {
     })
   }, [])
 
-  const startProcessing = useCallback(async () => {
+  const startProcessing = useCallback(async (newCaseId: string) => {
     setStep('processing')
-    const newCaseId = `case-${String(Date.now()).slice(-6)}`
     setCaseId(newCaseId)
 
     // Simulate processing steps
@@ -127,9 +127,40 @@ export function useCaseUpload() {
 
     // Auto-redirect after short delay
     setTimeout(() => {
-      router.push(ROUTES.CASE_DETAIL('case-011'))
+      router.push(ROUTES.CASE_DETAIL(newCaseId))
     }, 1200)
   }, [router, addNotification])
+
+  const submitUpload = useCallback(async () => {
+    if (!selectedPatient || !imageFile) return false
+
+    try {
+      const res = await caseService.uploadCase({
+        patientId: selectedPatient.id,
+        image: imageFile,
+      })
+      if (!res.success || !res.data?.caseId) {
+        setUploadError({
+          type: 'upload',
+          message: res.error?.message ?? 'Upload failed. Please try again.',
+        })
+        setStep('error')
+        setIsUploading(false)
+        return false
+      }
+
+      await startProcessing(res.data.caseId)
+      return true
+    } catch {
+      setUploadError({
+        type: 'upload',
+        message: 'Upload failed. Please try again.',
+      })
+      setStep('error')
+      setIsUploading(false)
+      return false
+    }
+  }, [imageFile, selectedPatient, startProcessing])
 
   const handleUpload = useCallback(async () => {
     if (!selectedPatient || !imageFile) return
@@ -148,18 +179,20 @@ export function useCaseUpload() {
         return // Stay on quality_check step — user can retake or proceed anyway
       }
 
-      // Quality passed — go to processing
-      await startProcessing()
+      // Quality passed — upload to backend and continue processing UX.
+      await submitUpload()
     } catch {
       setUploadError({ type: 'upload', message: 'Upload failed. Please try again.' })
       setStep('error')
       setIsUploading(false)
     }
-  }, [selectedPatient, imageFile, simulateQualityCheck, startProcessing])
+  }, [selectedPatient, imageFile, simulateQualityCheck, submitUpload])
 
   const proceedAnyway = useCallback(async () => {
-    await startProcessing()
-  }, [startProcessing])
+    if (!selectedPatient || !imageFile) return
+    setIsUploading(true)
+    await submitUpload()
+  }, [imageFile, selectedPatient, submitUpload])
 
   const retakeImage = useCallback(() => {
     removeImage()

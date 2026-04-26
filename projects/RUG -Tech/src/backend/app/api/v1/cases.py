@@ -38,10 +38,32 @@ router = APIRouter(prefix="/cases", tags=["cases"])
 def upload_case(
     current_user: CurrentUser,
     db: Session = Depends(get_db),
-    patient_id: str = Form(...),
-    image: UploadFile = File(...),
+    # Accept both `patient_id` (canonical) and `patientId` (legacy/FE variants).
+    patient_id: str | None = Form(default=None),
+    patientId: str | None = Form(default=None),
+    # Accept both `image` (canonical) and `file` (legacy/FE variants).
+    image: UploadFile | None = File(default=None),
+    file: UploadFile | None = File(default=None),
 ) -> ApiResponse[UploadCaseData]:
-    result = case_service.upload_case(db, current_user, patient_id, image)
+    resolved_patient_id = patient_id or patientId
+    resolved_image = image or file
+    if not resolved_patient_id:
+        # Let this remain a validation-style error for clients.
+        from fastapi import HTTPException, status
+
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Missing required form field 'patient_id'",
+        )
+    if resolved_image is None:
+        from fastapi import HTTPException, status
+
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Missing required file field 'image'",
+        )
+
+    result = case_service.upload_case(db, current_user, resolved_patient_id, resolved_image)
     return ApiResponse.ok(result)
 
 
