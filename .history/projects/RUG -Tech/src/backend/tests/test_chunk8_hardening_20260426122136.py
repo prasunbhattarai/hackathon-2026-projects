@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+from fastapi import APIRouter
 from fastapi.testclient import TestClient
 
 from app.core.security import require_doctor
@@ -15,8 +16,8 @@ class _DummyDB:
 
 
 def test_not_found_uses_api_envelope():
-    with TestClient(app, raise_server_exceptions=False) as client:
-        response = client.get("/api/v1/definitely-missing")
+    client = TestClient(app, raise_server_exceptions=False)
+    response = client.get("/api/v1/definitely-missing")
 
     assert response.status_code == 404
     body = response.json()
@@ -29,8 +30,8 @@ def test_validation_error_uses_api_envelope():
     app.dependency_overrides[require_doctor] = lambda: SimpleNamespace()
     app.dependency_overrides[get_db] = lambda: iter([_DummyDB()])
 
-    with TestClient(app, raise_server_exceptions=False) as client:
-        response = client.get("/api/v1/reports/not-a-uuid/pdf?type=not-valid")
+    client = TestClient(app, raise_server_exceptions=False)
+    response = client.get("/api/v1/reports/not-a-uuid/pdf?type=not-valid")
 
     app.dependency_overrides.clear()
 
@@ -41,13 +42,17 @@ def test_validation_error_uses_api_envelope():
     assert isinstance(body["error"]["details"], dict)
 
 
-def test_unhandled_error_uses_api_envelope(monkeypatch):
-    from app.api import health as health_api
+def test_unhandled_error_uses_api_envelope():
+    crash_router = APIRouter()
 
-    monkeypatch.setattr(health_api, "get_health_status", lambda: (_ for _ in ()).throw(RuntimeError("boom")))
+    @crash_router.get("/chunk8-crash")
+    def crash() -> dict:
+        raise RuntimeError("boom")
 
-    with TestClient(app, raise_server_exceptions=False) as client:
-        response = client.get("/api/v1/health", headers={"x-request-id": "req-chunk8"})
+    app.include_router(crash_router, prefix="/api/v1", tags=["chunk8-tests"])
+
+    client = TestClient(app, raise_server_exceptions=False)
+    response = client.get("/api/v1/chunk8-crash", headers={"x-request-id": "req-chunk8"})
 
     assert response.status_code == 500
     body = response.json()
@@ -57,8 +62,8 @@ def test_unhandled_error_uses_api_envelope(monkeypatch):
 
 
 def test_response_has_security_and_request_headers():
-    with TestClient(app, raise_server_exceptions=False) as client:
-        response = client.get("/api/v1/health")
+    client = TestClient(app, raise_server_exceptions=False)
+    response = client.get("/api/v1/health")
 
     assert response.status_code == 200
     assert response.headers.get("X-Request-ID")
@@ -70,8 +75,8 @@ def test_response_has_security_and_request_headers():
 
 
 def test_readiness_endpoint_available():
-    with TestClient(app, raise_server_exceptions=False) as client:
-        response = client.get("/api/v1/health/ready")
+    client = TestClient(app, raise_server_exceptions=False)
+    response = client.get("/api/v1/health/ready")
 
     assert response.status_code == 200
     body = response.json()

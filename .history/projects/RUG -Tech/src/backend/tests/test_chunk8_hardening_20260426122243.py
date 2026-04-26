@@ -41,13 +41,17 @@ def test_validation_error_uses_api_envelope():
     assert isinstance(body["error"]["details"], dict)
 
 
-def test_unhandled_error_uses_api_envelope(monkeypatch):
-    from app.api import health as health_api
+def test_unhandled_error_uses_api_envelope():
+    crash_router = APIRouter()
 
-    monkeypatch.setattr(health_api, "get_health_status", lambda: (_ for _ in ()).throw(RuntimeError("boom")))
+    @crash_router.get("/chunk8-crash")
+    def crash() -> dict:
+        raise RuntimeError("boom")
+
+    app.include_router(crash_router, prefix="/api/v1", tags=["chunk8-tests"])
 
     with TestClient(app, raise_server_exceptions=False) as client:
-        response = client.get("/api/v1/health", headers={"x-request-id": "req-chunk8"})
+        response = client.get("/api/v1/chunk8-crash", headers={"x-request-id": "req-chunk8"})
 
     assert response.status_code == 500
     body = response.json()
