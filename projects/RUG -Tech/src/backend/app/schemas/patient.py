@@ -17,6 +17,7 @@ class CreatePatientRequest(BaseModel):
     gender: Gender
     contact: str = Field(min_length=1, max_length=50)
     medicalId: str = Field(min_length=1, max_length=100)
+    clinicId: str | None = Field(default=None, min_length=1, max_length=100)
 
 
 class UpdatePatientRequest(BaseModel):

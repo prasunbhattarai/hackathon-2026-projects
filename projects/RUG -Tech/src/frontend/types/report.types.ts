@@ -1,4 +1,5 @@
 import type { Gender } from "@/types/patient.types";
+import type { AnalysisResult } from "@/types/analysis.types";
 
 export type ReportType = "doctor" | "patient";
 
@@ -45,19 +46,7 @@ export interface GeneralReport {
   priorityTier: string;
   createdAt: string;
   updatedAt: string;
-  analysisResult: {
-    id: string;
-    caseId: string;
-    dr: Record<string, unknown>;
-    glaucoma: Record<string, unknown>;
-    hypertensiveRetinopathy: Record<string, unknown>;
-    finalDecision: string | null;
-    recommendation: string | null;
-    ragJustification: string | null;
-    heatmapUrl: string | null;
-    decisionConfidence: string | null;
-    createdAt: string;
-  };
+  analysisResult: AnalysisResult;
 }
 
 export interface ReportBundle {

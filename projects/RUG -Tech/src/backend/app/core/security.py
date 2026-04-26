@@ -21,6 +21,7 @@ RBAC matrix:
 """
 
 from typing import Annotated
+from functools import lru_cache
 
 import jwt
 from fastapi import Depends, HTTPException, Security, status
@@ -35,24 +36,49 @@ from app.schemas.enums import UserRole
 _bearer = HTTPBearer(auto_error=True)
 
 
+@lru_cache(maxsize=1)
+def _get_jwks_client(supabase_url: str) -> jwt.PyJWKClient:
+    jwks_url = f"{supabase_url.rstrip('/')}/auth/v1/.well-known/jwks.json"
+    return jwt.PyJWKClient(jwks_url)
+
+
+def _decode_supabase_token(token: str) -> dict:
+    settings = get_settings()
+    header = jwt.get_unverified_header(token)
+    algorithm = str(header.get("alg", "HS256"))
+
+    # Legacy Supabase projects may still use symmetric signing (HS256).
+    if algorithm.upper().startswith("HS") and settings.SUPABASE_JWT_SECRET:
+        return jwt.decode(
+            token,
+            settings.SUPABASE_JWT_SECRET,
+            algorithms=[algorithm],
+            options={"verify_aud": False},
+        )
+
+    # Newer Supabase projects use asymmetric keys (e.g., ES256), verified via JWKS.
+    jwk_client = _get_jwks_client(settings.SUPABASE_URL)
+    signing_key = jwk_client.get_signing_key_from_jwt(token)
+    return jwt.decode(
+        token,
+        signing_key.key,
+        algorithms=[algorithm],
+        options={"verify_aud": False},
+    )
+
+
 def verify_token(
     credentials: Annotated[HTTPAuthorizationCredentials, Security(_bearer)],
 ) -> dict:
     """
-    Decode and verify a Supabase-issued JWT (HS256).
+    Decode and verify a Supabase-issued JWT.
     Returns the full claims payload on success.
     Raises HTTP 401 on invalid/expired tokens.
     """
-    settings = get_settings()
     token = credentials.credentials
 
     try:
-        payload: dict = jwt.decode(
-            token,
-            settings.SUPABASE_JWT_SECRET,
-            algorithms=["HS256"],
-            options={"verify_aud": False},  # Supabase tokens have 'authenticated' audience
-        )
+        payload: dict = _decode_supabase_token(token)
     except jwt.ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

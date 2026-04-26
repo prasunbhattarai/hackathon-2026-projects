@@ -1,71 +1,77 @@
-'use client'
+"use client";
 
-import { useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
-import { Upload } from 'lucide-react'
-import { PageHeader } from '@/Components/Layout/PageHeader'
-import { Button } from '@/Components/ui/Button'
-import { Badge } from '@/Components/ui/Badge'
-import { ROUTES } from '@/constants/routes'
-import type { CaseSummary } from '@/types/case.types'
-import { CaseFilterBar } from '@/features/cases/components/CaseFilterBar'
-import { TriageQueue } from '@/features/cases/components/TriageQueue'
-import { staggerContainer, staggerItem } from '@/animations/page.variants'
-import { useCases } from '@/features/cases/hooks/useCases'
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { Upload } from "lucide-react";
+import { PageHeader } from "@/Components/Layout/PageHeader";
+import { Button } from "@/Components/ui/Button";
+import { Badge } from "@/Components/ui/Badge";
+import { ROUTES } from "@/constants/routes";
+import type { CaseSummary } from "@/types/case.types";
+import { CaseFilterBar } from "@/features/cases/components/CaseFilterBar";
+import { TriageQueue } from "@/features/cases/components/TriageQueue";
+import { staggerContainer, staggerItem } from "@/animations/page.variants";
+import { useCases } from "@/features/cases/hooks/useCases";
 
 export default function CasesPageClient() {
-  const router = useRouter()
+  const router = useRouter();
 
   // Filters
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [priorityFilter, setPriorityFilter] = useState('all')
-  const [sortBy, setSortBy] = useState('newest')
-  const [dateRange, setDateRange] = useState('all')
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
+  const [dateRange, setDateRange] = useState("all");
 
   const casesQuery = useCases({
     page: 1,
     limit: 50,
-    status: statusFilter !== 'all' ? (statusFilter as never) : undefined,
-    priorityTier: priorityFilter !== 'all' ? (priorityFilter as never) : undefined,
-  })
+    status: statusFilter !== "all" ? (statusFilter as never) : undefined,
+    priorityTier:
+      priorityFilter !== "all" ? (priorityFilter as never) : undefined,
+  });
 
-  const cases = (casesQuery.data?.data?.items ?? []) as (CaseSummary & { drStatus: string })[]
-  const isLoading = casesQuery.isLoading
+  const cases = (casesQuery.data?.data?.items ?? []) as (CaseSummary & {
+    drStatus: string;
+  })[];
+  const isLoading = casesQuery.isLoading;
 
   // Status counts
   const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = {}
+    const counts: Record<string, number> = {};
     cases.forEach((c) => {
-      counts[c.status] = (counts[c.status] || 0) + 1
-    })
-    return counts
-  }, [cases])
+      counts[c.status] = (counts[c.status] || 0) + 1;
+    });
+    return counts;
+  }, [cases]);
 
-  const criticalCount = cases.filter((c) => c.priorityTier === 'critical').length
+  const criticalCount = cases.filter(
+    (c) => c.priorityTier === "critical",
+  ).length;
 
   // Filtered + sorted cases
   const filteredCases = useMemo(() => {
-    let result = [...cases]
+    const result = [...cases];
 
     // Sort
-    if (sortBy === 'priority') {
-      result.sort((a, b) => b.priorityScore - a.priorityScore)
-    } else if (sortBy === 'newest') {
+    if (sortBy === "priority") {
+      result.sort((a, b) => b.priorityScore - a.priorityScore);
+    } else if (sortBy === "newest") {
       result.sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      )
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
     }
 
-    return result
-  }, [cases, sortBy])
+    return result;
+  }, [cases, sortBy]);
 
   const resetFilters = () => {
-    setStatusFilter('all')
-    setPriorityFilter('all')
-    setSortBy('newest')
-    setDateRange('all')
-  }
+    setStatusFilter("all");
+    setPriorityFilter("all");
+    setSortBy("newest");
+    setDateRange("all");
+  };
 
   return (
     <motion.div variants={staggerContainer} initial="initial" animate="animate">
@@ -123,10 +129,9 @@ export default function CasesPageClient() {
         <TriageQueue
           cases={filteredCases}
           loading={isLoading}
-          grouped={statusFilter === 'all'}
+          grouped={statusFilter === "all"}
         />
       </motion.div>
     </motion.div>
-  )
+  );
 }
-

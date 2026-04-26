@@ -19,6 +19,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models.case import Case
+from app.models.clinic import Clinic
 from app.models.patient import Patient
 from app.models.user import User
 from app.schemas.base import PaginatedResponse
@@ -92,7 +93,31 @@ def create_patient(
     user: User,
     data: CreatePatientRequest,
 ) -> PatientDetailOut:
-    clinic_id = _assert_clinic(user)
+    if user.role == UserRole.SUPER_ADMIN.value:
+        if data.clinicId:
+            try:
+                clinic_id = uuid.UUID(data.clinicId)
+            except ValueError:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="Invalid clinicId format",
+                )
+        elif user.clinic_id is not None:
+            clinic_id = user.clinic_id
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="clinicId is required for super admin users without an assigned clinic",
+            )
+    else:
+        clinic_id = _assert_clinic(user)
+
+    clinic_exists = db.get(Clinic, clinic_id)
+    if clinic_exists is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Clinic not found",
+        )
 
     # Enforce medical_id uniqueness within clinic (global unique is enforced by DB too)
     existing = db.execute(
