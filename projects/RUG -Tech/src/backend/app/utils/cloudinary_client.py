@@ -57,6 +57,22 @@ def upload_image(file: UploadFile, folder: str = "fundusai/fundus") -> dict:
     return result
 
 
+def upload_bytes_as_image(image_bytes: bytes, folder: str = "fundusai/heatmaps") -> dict:
+    """
+    Upload raw image bytes (e.g. base64-decoded heatmap) to Cloudinary.
+
+    Returns the Cloudinary upload result dict (keys: secure_url, public_id, …).
+    """
+    import io
+    _configure()
+    result = cloudinary.uploader.upload(
+        io.BytesIO(image_bytes),
+        folder=folder,
+        resource_type="image",
+    )
+    return result
+
+
 def upload_local_file(file_path: "Path", folder: str = "fundusai/heatmaps") -> dict:
     """
     Upload a local image file (e.g. AI-generated heatmap) to Cloudinary.

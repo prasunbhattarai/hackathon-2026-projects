@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.security import CurrentUser
@@ -8,9 +9,11 @@ from app.schemas.enums import ReportType
 from app.schemas.report import (
 	DoctorReportOut,
 	GenerateReportRequest,
+	GeneralReportOut,
 	PDFDownloadUrlOut,
 	PatientReportOut,
 	ReportOut,
+	ShareReportRequest,
 )
 from app.services import report_service
 
@@ -99,4 +102,33 @@ def get_case_pdf_url(
 	report_type: ReportType = Query(default=ReportType.DOCTOR, alias="type"),
 ) -> ApiResponse[PDFDownloadUrlOut]:
 	result = report_service.get_case_pdf_url(db, current_user, case_id, report_type)
+	return ApiResponse.ok(result)
+
+
+@router.get(
+	"/{case_id}/general",
+	response_model=ApiResponse[GeneralReportOut],
+	summary="Get combined case detail + analysis result (general report)",
+)
+def get_general_report(
+	case_id: str,
+	current_user: CurrentUser,
+	db: Session = Depends(get_db),
+) -> ApiResponse[GeneralReportOut]:
+	result = report_service.get_general_report(db, current_user, case_id)
+	return ApiResponse.ok(result)
+
+
+@router.post(
+	"/{case_id}/share",
+	response_model=ApiResponse[dict],
+	summary="Share report to patient email",
+)
+def share_report(
+	case_id: str,
+	body: ShareReportRequest,
+	current_user: CurrentUser,
+	db: Session = Depends(get_db),
+) -> ApiResponse[dict]:
+	result = report_service.share_report(db, current_user, case_id, body.email)
 	return ApiResponse.ok(result)

@@ -29,6 +29,8 @@ from app.schemas.report import (
     ReportDiagnosis,
     ReportOut,
     ReportPatientInfo,
+    GeneralReportOut,
+    AnalysisResultOut,
 )
 from app.utils.cloudinary_client import build_signed_raw_url, upload_pdf
 
@@ -231,21 +233,27 @@ def _create_report_record(
     else:
         base_patient_report = _build_patient_report(analysis, generated_at)
         if patient_report_json:
+            # AI layer (via Gemini) returns patient_report with these keys:
+            #   summary, possible_conditions (list), what_this_means, next_steps, urgency
+            possible_conditions: list = patient_report_json.get("possible_conditions") or []
+            what_was_found = (
+                possible_conditions[0]
+                if possible_conditions
+                else patient_report_json.get("what_this_means")
+            )
             report_data = PatientReportOut(
                 reportType=ReportType.PATIENT,
                 summary=str(patient_report_json.get("summary") or base_patient_report.summary),
-                whatWasFound=str(
-                    patient_report_json.get("whatWasFound")
-                    or patient_report_json.get("risk")
-                    or base_patient_report.whatWasFound
-                ),
+                whatWasFound=str(what_was_found or base_patient_report.whatWasFound),
                 nextSteps=str(
-                    patient_report_json.get("nextSteps")
-                    or patient_report_json.get("recommendation")
+                    patient_report_json.get("next_steps")
                     or base_patient_report.nextSteps
                 ),
                 severityLabel=base_patient_report.severityLabel,
-                urgency=base_patient_report.urgency,
+                urgency=str(
+                    patient_report_json.get("urgency")
+                    or base_patient_report.urgency
+                ),
                 generatedAt=base_patient_report.generatedAt,
             )
         else:
@@ -442,3 +450,95 @@ def get_case_pdf_url(
         url=report.pdf_url or "",
         expiresAt=(report.pdf_expires_at or datetime.now(UTC)).isoformat(),
     )
+
+
+def get_general_report(
+    db: Session,
+    user: User,
+    case_id: str,
+) -> GeneralReportOut:
+    """
+    Return combined case detail + analysis result.
+
+    Consumed by the frontend GeneralReport type:
+        type GeneralReport = CaseDetail & { analysisResult: AnalysisResult }
+    """
+    case = db.get(Case, uuid.UUID(case_id))
+    if case is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+    _assert_case_access(user, case)
+
+    analysis = db.execute(
+        select(AnalysisResult).where(AnalysisResult.case_id == case.id)
+    ).scalar_one_or_none()
+    if analysis is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No analysis result available for this case",
+        )
+
+    analysis_out = AnalysisResultOut(
+        id=str(analysis.id),
+        caseId=str(analysis.case_id),
+        dr={
+            "status": analysis.dr_status,
+            "confidence": analysis.dr_confidence,
+            "severityLevel": analysis.dr_severity_level,
+        },
+        glaucoma={
+            "risk": analysis.glaucoma_risk,
+            "confidence": analysis.glaucoma_confidence,
+        },
+        hypertensiveRetinopathy={
+            "risk": analysis.hr_risk,
+            "confidence": analysis.hr_confidence,
+        },
+        finalDecision=analysis.final_decision,
+        recommendation=analysis.recommendation,
+        ragJustification=analysis.rag_justification,
+        heatmapUrl=analysis.heatmap_url,
+        decisionConfidence=analysis.decision_confidence,
+        createdAt=analysis.created_at.isoformat(),
+    )
+
+    return GeneralReportOut(
+        id=str(case.id),
+        patientId=str(case.patient_id),
+        clinicId=str(case.clinic_id),
+        submittedBy=str(case.submitted_by or ""),
+        imageUrl=case.image_url or "",
+        imageQuality=case.image_quality or "",
+        status=case.status or "",
+        priorityScore=case.priority_score or 0.0,
+        priorityTier=case.priority_tier or "",
+        createdAt=case.created_at.isoformat(),
+        updatedAt=case.updated_at.isoformat(),
+        analysisResult=analysis_out,
+    )
+
+
+def share_report(
+    db: Session,
+    user: User,
+    case_id: str,
+    email: str,
+) -> dict:
+    """
+    Stub: trigger report sharing to a patient email.
+
+    Email delivery infrastructure is not yet integrated.
+    Returns a placeholder response so the frontend contract is satisfied.
+    """
+    case = db.get(Case, uuid.UUID(case_id))
+    if case is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+    _assert_case_access(user, case)
+
+    # TODO: integrate an email provider (e.g. SendGrid / Resend) to actually
+    #       send the PDF link to `email`. For now, we log and return success.
+    import logging as _logging
+    _logging.getLogger(__name__).info(
+        "share_report stub: case_id=%s target_email=%s requested_by=%s",
+        case_id, email, user.id,
+    )
+    return {"sent": True}
