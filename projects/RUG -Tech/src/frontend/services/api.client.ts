@@ -1,5 +1,4 @@
 import type { ApiResponse } from "@/types/api.types";
-import * as authService from "@/services/auth.service";
 import { useAuthStore } from "@/store/authStore";
 
 // Default is REAL backend. Only enable mocks explicitly.
@@ -110,12 +109,15 @@ async function routeMock<T>(
     const { getReportBundleByCaseIdMock } =
       await import("@/mock/handlers/analysis.handler");
     const bundleRes = await getReportBundleByCaseIdMock(caseId);
-    if (!bundleRes.success) return bundleRes as unknown as ApiResponse<T>;
+    if (!bundleRes.success || !bundleRes.data) {
+      return bundleRes as unknown as ApiResponse<T>;
+    }
+    const bundleData = bundleRes.data;
     const reportType = parts[3] as "doctor" | "patient" | "general" | undefined;
-    if (reportType && reportType in bundleRes.data) {
+    if (reportType && reportType in bundleData) {
       return {
         success: true,
-        data: bundleRes.data[reportType] as T,
+        data: bundleData[reportType] as T,
         error: null,
       };
     }
@@ -137,15 +139,22 @@ async function routeMock<T>(
   };
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+function resolveApiBase(): string {
+  const configured = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
+  if (!configured) return "http://127.0.0.1:8000";
 
-function setAccessTokenCookie(token: string) {
-  if (typeof document === "undefined") return;
-  const secure = window.location.protocol === "https:" ? "; Secure" : "";
-  document.cookie = `fundus-access-token=${encodeURIComponent(
-    token,
-  )}; Path=/; SameSite=Lax${secure}`;
+  if (/^https?:\/\//i.test(configured)) {
+    return configured.replace(/\/+$/, "");
+  }
+
+  if (configured.startsWith("/") && typeof window !== "undefined") {
+    return `${window.location.origin}${configured}`.replace(/\/+$/, "");
+  }
+
+  return "http://127.0.0.1:8000";
 }
+
+const API_BASE = resolveApiBase();
 
 async function handle401AndRetry<T>(
   original: () => Promise<Response>,

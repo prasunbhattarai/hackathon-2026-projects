@@ -1,48 +1,52 @@
-'use client'
+"use client";
 
-import { useState, type FormEvent } from 'react'
-import { AlertTriangle, Eye as EyeIcon, EyeOff } from 'lucide-react'
-import { cn } from '@/lib/cn'
-import { Input } from '@/Components/ui/Input'
-import { Button } from '@/Components/ui/Button'
-import { useLogin } from '@/features/auth/hooks/useLogin'
+import { useState, type FormEvent } from "react";
+import { AlertTriangle, Eye as EyeIcon, EyeOff } from "lucide-react";
+import { cn } from "@/lib/cn";
+import { Input } from "@/Components/ui/Input";
+import { Button } from "@/Components/ui/Button";
+import { useLogin } from "@/features/auth/hooks/useLogin";
 
 function validateEmail(email: string): string | null {
-  if (!email.trim()) return 'Email is required'
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Enter a valid email'
-  return null
+  if (!email.trim()) return "Email is required";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "Enter a valid email";
+  return null;
 }
 
 function validatePassword(password: string): string | null {
-  if (!password) return 'Password is required'
-  if (password.length < 6) return 'Password must be at least 6 characters'
-  return null
+  if (!password) return "Password is required";
+  if (password.length < 6) return "Password must be at least 6 characters";
+  return null;
 }
 
 export const LoginForm = () => {
-  const { handleLogin, isLoading, error } = useLogin()
+  const { handleLogin, isLoading, error } = useLogin();
+  const isMockMode = process.env.NEXT_PUBLIC_USE_MOCK_API === "true";
 
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [emailError, setEmailError] = useState<string | null>(null)
-  const [passwordError, setPasswordError] = useState<string | null>(null)
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
   const onSubmit = async (e: FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
-    const eErr = validateEmail(email)
-    const pErr = validatePassword(password)
-    setEmailError(eErr)
-    setPasswordError(pErr)
+    const eErr = validateEmail(email);
+    const pErr = validatePassword(password);
+    setEmailError(eErr);
+    setPasswordError(pErr);
 
-    if (eErr || pErr) return
+    if (eErr || pErr) return;
 
-    await handleLogin({ email, password })
-  }
+    await handleLogin({ email, password });
+  };
 
   return (
-    <form onSubmit={onSubmit} className="w-full max-w-[360px] flex flex-col gap-5">
+    <form
+      onSubmit={onSubmit}
+      className="w-full max-w-[360px] flex flex-col gap-5"
+    >
       {/* Header */}
       <div className="mb-2">
         <h1 className="font-display text-[28px] text-[var(--text-primary)] leading-tight">
@@ -57,9 +61,9 @@ export const LoginForm = () => {
       {error && (
         <div
           className={cn(
-            'flex items-start gap-2.5 px-3.5 py-3',
-            'bg-[var(--sev-critical)]/10 border border-[var(--sev-critical)]/30',
-            'rounded-[4px]',
+            "flex items-start gap-2.5 px-3.5 py-3",
+            "bg-[var(--sev-critical)]/10 border border-[var(--sev-critical)]/30",
+            "rounded-[4px]",
           )}
           role="alert"
         >
@@ -87,7 +91,7 @@ export const LoginForm = () => {
       {/* Password */}
       <Input
         label="Password"
-        type={showPassword ? 'text' : 'password'}
+        type={showPassword ? "text" : "password"}
         placeholder="••••••••"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
@@ -101,7 +105,7 @@ export const LoginForm = () => {
             onClick={() => setShowPassword((v) => !v)}
             className="text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer"
             tabIndex={-1}
-            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            aria-label={showPassword ? "Hide password" : "Show password"}
           >
             {showPassword ? <EyeOff size={16} /> : <EyeIcon size={16} />}
           </button>
@@ -122,15 +126,21 @@ export const LoginForm = () => {
 
       {/* Demo hint */}
       <p className="text-center text-xs text-[var(--text-muted)] mt-1 leading-relaxed">
-        For demo:{' '}
-        <span className="text-[var(--text-secondary)] font-mono text-[11px]">
-          dr.anita@sagarmathaeye.com
-        </span>
-        {' / '}
-        <span className="text-[var(--text-secondary)] font-mono text-[11px]">
-          fundus-demo-123
-        </span>
+        {isMockMode ? (
+          <>
+            For demo:{" "}
+            <span className="text-[var(--text-secondary)] font-mono text-[11px]">
+              dr.anita@sagarmathaeye.com
+            </span>
+            {" / "}
+            <span className="text-[var(--text-secondary)] font-mono text-[11px]">
+              fundus-demo-123
+            </span>
+          </>
+        ) : (
+          <>Sign in with your provisioned backend account credentials.</>
+        )}
       </p>
     </form>
-  )
-}
+  );
+};

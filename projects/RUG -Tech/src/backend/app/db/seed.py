@@ -27,10 +27,10 @@ class SeedConfig:
     clinic_address: str = "Kathmandu, Nepal"
     clinic_phone: str = "+977-1-555-0100"
 
-    admin_email: str = "admin.demo@caredevi.local"
+    admin_email: str = "admin.demo@caredevi.ai"
     admin_full_name: str = "CareDevi Super Admin"
 
-    doctor_email: str = "doctor.demo@caredevi.local"
+    doctor_email: str = "doctor.demo@caredevi.ai"
     doctor_full_name: str = "CareDevi Demo Doctor"
 
 
