@@ -5,23 +5,25 @@ import math
 import sys
 from pathlib import Path
 from typing import Dict, Iterable, List
-
 import torch  # type: ignore[import-not-found]
 from PIL import Image
+from postprocessing.heatmap import GradCAM, overlay_heatmap
+import cv2
+import base64
 
 # Ensure imports work when running this file directly.
 AI_ROOT = Path(__file__).resolve().parents[1]
 if str(AI_ROOT) not in sys.path:
     sys.path.insert(0, str(AI_ROOT))
 
-from loaders.resnet import get_model
+from loader.resnet import get_model
 from preprocessing.transforms import get_transforms
 from utils.device import get_device
 
 
 SRC_ROOT = Path(__file__).resolve().parents[2]
-DR_CHECKPOINT = SRC_ROOT / "models" / "dr.pth"
-HG_CHECKPOINT = SRC_ROOT / "models" / "hypertensive_and_glaucoma_model.pth"
+DR_CHECKPOINT = AI_ROOT / "models" / "dr.pth"
+HG_CHECKPOINT = AI_ROOT / "models" / "hypertensive_and_glaucoma_model.pth"
 TEST_IMAGE = SRC_ROOT / "test_images" / "images.jpg"
 
 
@@ -93,29 +95,38 @@ class PredictionPipeline:
         batch = self._preprocess_image(image_path)
 
         dr_model = self._load_model(self.dr_checkpoint)
-        glaucoma_model = self._load_model(self.hg_checkpoint)
-        hr_model = self._load_model(self.hg_checkpoint)
+        hg_model = self._load_model(self.hg_checkpoint)
+        target_layer = dr_model.layer4[-1]
+        gradcam = GradCAM(dr_model, target_layer)
 
         with torch.no_grad():
             dr_logits = dr_model(batch).detach().cpu().flatten().tolist()
-            glaucoma_raw = glaucoma_model(batch).detach().cpu().flatten().tolist()
-            hr_raw = hr_model(batch).detach().cpu().flatten().tolist()
+            hg_raw = hg_model(batch).detach().cpu().flatten().tolist()
 
+        batch_cam = batch.clone().detach().requires_grad_(True)
+        dr_model.zero_grad()
+        output = dr_model(batch_cam)
         dr_probs = _softmax([float(v) for v in dr_logits])
         dr_labels = _dr_labels(len(dr_probs))
         dr_distribution = {label: _round4(prob) for label, prob in zip(dr_labels, dr_probs)}
         dr_pred_idx = max(range(len(dr_probs)), key=lambda idx: dr_probs[idx])
+        dr_pred_idx = output.argmax(dim=1).item()
+
+        cam = gradcam.generate(batch_cam, class_idx=dr_pred_idx)
+        original = cv2.imread(str(image_path))
+        original = cv2.resize(original, (224, 224))  # must match transform size
+
+        heatmap_img = overlay_heatmap(original, cam)
+        _, buffer = cv2.imencode(".jpg", heatmap_img)
+        heatmap_base64 = base64.b64encode(buffer).decode("utf-8")
         dr_probability = 1.0 - dr_probs[0]
 
-        if len(glaucoma_raw) == 1:
-            glaucoma_probability = _sigmoid(float(glaucoma_raw[0]))
-        else:
-            glaucoma_probability = _softmax([float(v) for v in glaucoma_raw])[-1]
+        # Assuming hg model outputs 2 logits: [glaucoma, hr]
+        glaucoma_logit = float(hg_raw[0])
+        hr_logit = float(hg_raw[1])
 
-        if len(hr_raw) == 1:
-            hr_probability = _sigmoid(float(hr_raw[0]))
-        else:
-            hr_probability = _softmax([float(v) for v in hr_raw])[-1]
+        glaucoma_probability = _sigmoid(glaucoma_logit)
+        hr_probability = _sigmoid(hr_logit)
 
         return {
             "DR": {
@@ -131,6 +142,10 @@ class PredictionPipeline:
                 "probability": _round4(hr_probability),
                 "predicted_risk": _risk_label(hr_probability, high=0.75, medium=0.6),
             },
+            "heatmap": {
+                "type": "DR",
+                "image_base64": heatmap_base64
+            }
         }
 
 
