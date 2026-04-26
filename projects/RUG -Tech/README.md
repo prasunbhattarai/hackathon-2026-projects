@@ -239,7 +239,7 @@ docker run -p 8000:8000 --env-file .env fundusai-backend
 
 ## Demo
 
-- **Demo video**: *(Add link)*
+- **Demo video**: *https://github.com/prasunbhattarai/hackathon-2026-projects/tree/main/projects/RUG%20-Tech/demo*
 
 
 ---
