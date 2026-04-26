@@ -1,17 +1,17 @@
 """
 Case CRUD service.
 
-Upload flow (Chunk 4 — Celery dispatch stubbed):
+Upload flow
   1. Validate image mime type + size
-  2. Store a placeholder image_url (Cloudinary upload wired in Chunk 5)
+  2. Store a placeholder image_url
   3. Create Case row with status=PROCESSING
   4. Return UploadCaseData (task_id is a placeholder UUID until Celery is wired)
 
 Status transitions:
-  PROCESSING → QUALITY_FAILED  (AI pipeline, Chunk 5)
-  PROCESSING → AWAITING_REVIEW (AI pipeline, Chunk 5)
-  AWAITING_REVIEW → APPROVED   (doctor/admin — this chunk)
-  AWAITING_REVIEW → REJECTED   (doctor/admin — this chunk)
+  PROCESSING → QUALITY_FAILED  (AI pipeline)
+  PROCESSING → AWAITING_REVIEW (AI pipeline)
+  AWAITING_REVIEW → APPROVED   (doctor/admin)
+  AWAITING_REVIEW → REJECTED   (doctor/admin)
 """
 
 import logging
@@ -72,15 +72,19 @@ def _assert_access(user: User, case: Case) -> None:
 
 
 def _to_summary(case: Case, patient_name: str) -> CaseSummaryOut:
+    created_at = getattr(case, "created_at", None)
+    created_at_str = ""
+    if created_at is not None and hasattr(created_at, "isoformat"):
+        created_at_str = created_at.isoformat()
     return CaseSummaryOut(
-        id=str(case.id),
-        patientName=patient_name,
-        status=CaseStatus(case.status),
-        priorityTier=PriorityTier(case.priority_tier) if case.priority_tier else PriorityTier.LOW,
-        priorityScore=case.priority_score or 0.0,
-        imageQuality=ImageQuality(case.image_quality) if case.image_quality else ImageQuality.GOOD,
+        id=str(getattr(case, "id", "")),
+        patientName=str(patient_name) if patient_name is not None else "",
+        status=CaseStatus(getattr(case, "status", CaseStatus.PROCESSING)),
+        priorityTier=PriorityTier(getattr(case, "priority_tier", None)) if getattr(case, "priority_tier", None) else PriorityTier.LOW,
+        priorityScore=getattr(case, "priority_score", 0.0) or 0.0,
+        imageQuality=ImageQuality(getattr(case, "image_quality", None)) if getattr(case, "image_quality", None) else ImageQuality.GOOD,
         drStatus="pending",
-        createdAt=case.created_at.isoformat(),
+        createdAt=created_at_str,
     )
 
 
@@ -96,16 +100,16 @@ def _to_detail(case: Case, patient: Patient, submitter: User | None) -> CaseDeta
         return today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
 
     patient_summary = PatientSummaryOut(
-        id=str(patient.id),
-        fullName=patient.full_name,
-        medicalId=patient.medical_id or "",
-        age=_age(patient.date_of_birth),
+        id=str(getattr(patient, "id", "")),
+        fullName=getattr(patient, "full_name", ""),
+        medicalId=getattr(patient, "medical_id", "") or "",
+        age=_age(getattr(patient, "date_of_birth", None)),
         lastCaseDate=None,
         totalCases=0,
     )
     submitted_by_out = SubmittedByUserOut(
-        id=str(submitter.id) if submitter else "",
-        fullName=submitter.full_name or "" if submitter else "",
+        id=str(getattr(submitter, "id", "")) if submitter else "",
+        fullName=getattr(submitter, "full_name", "") or "" if submitter else "",
     )
     return CaseDetailOut(
         id=str(case.id),
@@ -140,7 +144,8 @@ def upload_case(
     if patient is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
     clinic_id = _clinic_filter(user)
-    if clinic_id and patient.clinic_id != clinic_id:
+    # Fix for SQLAlchemy ColumnElement[bool] conditional
+    if clinic_id is not None and getattr(patient, "clinic_id", None) != clinic_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
     # ── validate image mime type ────────────────────────────────────────────
@@ -193,7 +198,7 @@ def upload_case(
 
     # ── dispatch Celery task ───────────────────────────────────────────────
     from app.worker.tasks import run_analysis
-    celery_task = run_analysis.delay(str(case.id))
+    celery_task = run_analysis.delay(str(case.id))  # type: ignore[attr-defined]
     case.task_id = celery_task.id
     db.commit()
 
@@ -236,9 +241,9 @@ def list_cases(
 
     items: list[CaseSummaryOut] = []
     for c in cases:
-        patient = db.get(Patient, c.patient_id)
-        patient_name = patient.full_name if patient else "Unknown"
-        items.append(_to_summary(c, patient_name))
+        patient = db.get(Patient, getattr(c, "patient_id", None))
+        patient_name = getattr(patient, "full_name", None) if patient else "Unknown"
+        items.append(_to_summary(c, str(patient_name) if patient_name is not None else ""))
 
     return PaginatedResponse(
         items=items,

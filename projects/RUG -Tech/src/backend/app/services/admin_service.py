@@ -1,5 +1,5 @@
 """
-Admin service (Chunk 7).
+Admin service 
 
 Platform-wide operations for super_admin users:
 - clinic management
@@ -51,14 +51,15 @@ def list_clinics(db: Session) -> list[ClinicOut]:
             select(func.count(Case.id)).where(Case.clinic_id == clinic.id)
         ).scalar_one()
 
+        created_at = getattr(clinic, "created_at", None)
         result.append(
             ClinicOut(
-                id=str(clinic.id),
-                name=clinic.name,
-                address=clinic.address or "",
-                phone=clinic.phone or "",
-                isActive=clinic.is_active,
-                createdAt=clinic.created_at.isoformat(),
+                id=str(getattr(clinic, "id", "")),
+                name=getattr(clinic, "name", ""),
+                address=getattr(clinic, "address", "") or "",
+                phone=getattr(clinic, "phone", "") or "",
+                isActive=getattr(clinic, "is_active", False),
+                createdAt=created_at.isoformat() if created_at else "",
                 userCount=user_count,
                 caseCount=case_count,
             )
@@ -79,13 +80,14 @@ def create_clinic(db: Session, data: CreateClinicRequest) -> ClinicOut:
     db.commit()
     db.refresh(clinic)
 
+    created_at = getattr(clinic, "created_at", None)
     return ClinicOut(
-        id=str(clinic.id),
-        name=clinic.name,
-        address=clinic.address or "",
-        phone=clinic.phone or "",
-        isActive=clinic.is_active,
-        createdAt=clinic.created_at.isoformat(),
+        id=str(getattr(clinic, "id", "")),
+        name=getattr(clinic, "name", ""),
+        address=getattr(clinic, "address", "") or "",
+        phone=getattr(clinic, "phone", "") or "",
+        isActive=getattr(clinic, "is_active", False),
+        createdAt=created_at.isoformat() if created_at else "",
         userCount=0,
         caseCount=0,
     )
