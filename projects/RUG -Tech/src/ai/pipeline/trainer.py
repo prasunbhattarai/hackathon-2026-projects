@@ -2,6 +2,21 @@ import torch
 import torch.optim as optim
 
 
+def get_num_classes(dataset):
+    if hasattr(dataset, 'data'):
+        return len(set(dataset.data.iloc[:, 1]))
+    elif hasattr(dataset, 'classes'):
+        return len(dataset.classes)
+    return None
+
+
+def get_class_names(dataset):
+    if hasattr(dataset, 'data'):
+        return sorted(set(dataset.data.iloc[:, 1]))
+    elif hasattr(dataset, 'classes'):
+        return dataset.classes
+    return None
+
 def get_optimizer(model, fine_tune_layers, lr=1e-3, weight_decay=0):
     param_groups = []
 
