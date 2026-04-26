@@ -1,7 +1,7 @@
 """
 Patient request/response schemas.
 
-Contract ref: CONTRACT.md §5
+Contract ref: CONTRACT.md
 """
 
 from datetime import date

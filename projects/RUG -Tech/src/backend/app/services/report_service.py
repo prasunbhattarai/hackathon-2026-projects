@@ -1,5 +1,5 @@
 """
-Report service (Chunk 6).
+Report service
 
 Creates doctor/patient report payloads, generates PDFs, stores report rows,
 and refreshes signed PDF URLs when they expire.
@@ -81,22 +81,24 @@ def _build_doctor_report(
     analysis: AnalysisResult,
     generated_at: datetime,
 ) -> DoctorReportOut:
+    gender_val = getattr(patient, "gender", Gender.OTHER.value)
+    gender_enum = Gender(gender_val) if isinstance(gender_val, str) and gender_val in Gender.__members__.values() else Gender.OTHER
     return DoctorReportOut(
         reportType=ReportType.DOCTOR,
         patient=ReportPatientInfo(
-            fullName=patient.full_name,
-            age=_age(patient.date_of_birth),
-            gender=patient.gender or Gender.OTHER.value,
+            fullName=getattr(patient, "full_name", ""),
+            age=_age(getattr(patient, "date_of_birth", None)),
+            gender=gender_enum,
         ),
         diagnosis=ReportDiagnosis(
-            primary=analysis.final_decision or "Retinal disease risk detected",
-            severity=_severity_label(analysis.dr_status),
-            confidence=f"{int((analysis.dr_confidence or 0.0) * 100)}%",
+            primary=getattr(analysis, "final_decision", None) or "Retinal disease risk detected",
+            severity=_severity_label(getattr(analysis, "dr_status", None)),
+            confidence=f"{int((getattr(analysis, 'dr_confidence', 0.0) or 0.0) * 100)}%",
         ),
-        planOfAction=analysis.recommendation or "Clinical review recommended.",
-        medicationSuggestions=_doctor_medication_suggestions(analysis.dr_status),
-        ragJustification=analysis.rag_justification or "No additional context available.",
-        heatmapUrl=analysis.heatmap_url or "",
+        planOfAction=getattr(analysis, "recommendation", None) or "Clinical review recommended.",
+        medicationSuggestions=_doctor_medication_suggestions(getattr(analysis, "dr_status", None)),
+        ragJustification=getattr(analysis, "rag_justification", None) or "No additional context available.",
+        heatmapUrl=getattr(analysis, "heatmap_url", None) or "",
         generatedAt=generated_at.isoformat(),
     )
 
@@ -153,16 +155,23 @@ def _to_report_out(report: Report) -> ReportOut:
     else:
         report_data = PatientReportOut.model_validate(payload)
 
+    created_at = getattr(report, "created_at", None)
+    pdf_url = getattr(report, "pdf_url", "")
+    if not isinstance(pdf_url, str):
+        pdf_url = str(pdf_url) if pdf_url is not None else ""
+    expires_at = getattr(report, "pdf_expires_at", None) or datetime.now(UTC)
+    expires_at_str = expires_at.isoformat() if expires_at is not None and hasattr(expires_at, "isoformat") else ""
+    created_at_str = created_at.isoformat() if created_at is not None and hasattr(created_at, "isoformat") else ""
     return ReportOut(
-        id=str(report.id),
-        caseId=str(report.case_id),
+        id=str(getattr(report, "id", "")),
+        caseId=str(getattr(report, "case_id", "")),
         reportType=report_type,
         reportData=report_data,
         pdf=PDFDownloadUrlOut(
-            url=report.pdf_url or "",
-            expiresAt=(report.pdf_expires_at or datetime.now(UTC)).isoformat(),
+            url=pdf_url,
+            expiresAt=expires_at_str,
         ),
-        createdAt=report.created_at.isoformat(),
+        createdAt=created_at_str,
     )
 
 
@@ -173,8 +182,17 @@ def _refresh_pdf_url_if_expired(db: Session, report: Report) -> None:
     expires_at = report.pdf_expires_at
     if expires_at.tzinfo is None:
         expires_at = expires_at.replace(tzinfo=UTC)
-    if now < expires_at:
-        return
+    # Fix for SQLAlchemy ColumnElement[bool] conditional
+    # If expires_at is a SQLAlchemy column, extract value
+    expires_at_val = expires_at
+    # If expires_at is a SQLAlchemy column, extract value
+    if hasattr(expires_at, 'value'):
+        expires_at_val = expires_at.value
+    # If expires_at_val is not a datetime, skip the check
+    from datetime import datetime as dt
+    if expires_at_val is not None and isinstance(expires_at_val, dt):
+        if now < expires_at_val:
+            return
 
     payload = report.content_json or {}
     public_id = payload.get("_pdf_public_id")
@@ -184,8 +202,9 @@ def _refresh_pdf_url_if_expired(db: Session, report: Report) -> None:
 
     settings = get_settings()
     new_expiry = now + timedelta(seconds=settings.PDF_DOWNLOAD_EXPIRY_SECONDS)
-    report.pdf_url = build_signed_raw_url(public_id, new_expiry, file_format)
-    report.pdf_expires_at = new_expiry
+    # Use setattr to assign to SQLAlchemy ORM fields
+    setattr(report, "pdf_url", build_signed_raw_url(public_id, new_expiry, file_format))
+    setattr(report, "pdf_expires_at", new_expiry)
     db.commit()
     db.refresh(report)
 
@@ -446,8 +465,11 @@ def get_case_pdf_url(
         return generated.pdf
 
     _refresh_pdf_url_if_expired(db, report)
+    pdf_url = report.pdf_url
+    if not isinstance(pdf_url, str):
+        pdf_url = str(pdf_url) if pdf_url is not None else ""
     return PDFDownloadUrlOut(
-        url=report.pdf_url or "",
+        url=pdf_url,
         expiresAt=(report.pdf_expires_at or datetime.now(UTC)).isoformat(),
     )
 

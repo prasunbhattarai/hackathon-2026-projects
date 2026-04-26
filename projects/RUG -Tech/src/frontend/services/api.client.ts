@@ -1,122 +1,150 @@
-import type { ApiResponse } from '@/types/api.types'
-import * as authService from '@/services/auth.service'
-import { useAuthStore } from '@/store/authStore'
+import type { ApiResponse } from "@/types/api.types";
+import * as authService from "@/services/auth.service";
+import { useAuthStore } from "@/store/authStore";
 
 // Default is REAL backend. Only enable mocks explicitly.
-const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK_API === 'true'
-const API_PREFIX = '/api/v1'
+const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK_API === "true";
+const API_PREFIX = "/api/v1";
 
 async function mockDelay(ms = Math.random() * 600 + 200): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms))
+  return new Promise((r) => setTimeout(r, ms));
 }
 
 /** Route mock calls to the appropriate handler based on endpoint pattern */
 async function routeMock<T>(
-  method: 'GET' | 'POST' | 'UPLOAD',
+  method: "GET" | "POST" | "PUT" | "UPLOAD",
   endpoint: string,
   bodyOrParams?: unknown,
 ): Promise<ApiResponse<T>> {
-  await mockDelay()
+  await mockDelay();
 
   /* ---- Auth ---- */
-  if (endpoint === '/auth/login' && method === 'POST') {
-    const { loginMock } = await import('@/mock/handlers/auth.handler')
-    return loginMock(bodyOrParams as Parameters<typeof loginMock>[0]) as Promise<ApiResponse<T>>
+  if (endpoint === "/auth/login" && method === "POST") {
+    const { loginMock } = await import("@/mock/handlers/auth.handler");
+    return loginMock(
+      bodyOrParams as Parameters<typeof loginMock>[0],
+    ) as Promise<ApiResponse<T>>;
   }
 
   /* ---- Patients ---- */
-  if (endpoint.match(/^\/patients$/) && method === 'GET') {
-    const { listPatientsMock } = await import('@/mock/handlers/patient.handler')
-    const p = bodyOrParams as Record<string, string> | undefined
+  if (endpoint.match(/^\/patients$/) && method === "GET") {
+    const { listPatientsMock } =
+      await import("@/mock/handlers/patient.handler");
+    const p = bodyOrParams as Record<string, string> | undefined;
     return listPatientsMock(
-      p?.clinicId ?? 'clinic-ktm-eye-01',
+      p?.clinicId ?? "clinic-ktm-eye-01",
       Number(p?.page ?? 1),
       Number(p?.limit ?? 10),
-    ) as Promise<ApiResponse<T>>
+    ) as Promise<ApiResponse<T>>;
   }
 
-  if (endpoint.match(/^\/patients\/[\w-]+$/) && method === 'GET') {
-    const id = endpoint.split('/').pop()!
-    const { getPatientDetailMock } = await import('@/mock/handlers/patient.handler')
-    return getPatientDetailMock(id) as Promise<ApiResponse<T>>
+  if (endpoint.match(/^\/patients\/[\w-]+$/) && method === "GET") {
+    const id = endpoint.split("/").pop()!;
+    const { getPatientDetailMock } =
+      await import("@/mock/handlers/patient.handler");
+    return getPatientDetailMock(id) as Promise<ApiResponse<T>>;
   }
 
-  if (endpoint === '/patients' && method === 'POST') {
-    const { createPatientMock } = await import('@/mock/handlers/patient.handler')
+  if (endpoint === "/patients" && method === "POST") {
+    const { createPatientMock } =
+      await import("@/mock/handlers/patient.handler");
     return createPatientMock(
-      'clinic-ktm-eye-01',
+      "clinic-ktm-eye-01",
       bodyOrParams as Parameters<typeof createPatientMock>[1],
-    ) as Promise<ApiResponse<T>>
+    ) as Promise<ApiResponse<T>>;
+  }
+
+  if (endpoint.match(/^\/patients\/[\w-]+$/) && method === "PUT") {
+    const id = endpoint.split("/").pop()!;
+    const { updatePatientMock } =
+      await import("@/mock/handlers/patient.handler");
+    return updatePatientMock(
+      id,
+      bodyOrParams as Parameters<typeof updatePatientMock>[1],
+    ) as Promise<ApiResponse<T>>;
   }
 
   /* ---- Cases ---- */
-  if (endpoint.match(/^\/cases$/) && method === 'GET') {
-    const { listCasesMock } = await import('@/mock/handlers/case.handler')
-    const p = bodyOrParams as Record<string, string> | undefined
-    return listCasesMock('clinic-ktm-eye-01', {
+  if (endpoint.match(/^\/cases$/) && method === "GET") {
+    const { listCasesMock } = await import("@/mock/handlers/case.handler");
+    const p = bodyOrParams as Record<string, string> | undefined;
+    return listCasesMock("clinic-ktm-eye-01", {
       page: Number(p?.page ?? 1),
       limit: Number(p?.limit ?? 10),
       status: p?.status as never,
       priorityTier: p?.priorityTier as never,
-    }) as Promise<ApiResponse<T>>
+    }) as Promise<ApiResponse<T>>;
   }
 
-  if (endpoint.match(/^\/cases\/[\w-]+$/) && method === 'GET') {
-    const id = endpoint.split('/').pop()!
-    const { getCaseDetailMock } = await import('@/mock/handlers/case.handler')
-    return getCaseDetailMock(id) as Promise<ApiResponse<T>>
+  if (endpoint.match(/^\/cases\/[\w-]+$/) && method === "GET") {
+    const id = endpoint.split("/").pop()!;
+    const { getCaseDetailMock } = await import("@/mock/handlers/case.handler");
+    return getCaseDetailMock(id) as Promise<ApiResponse<T>>;
   }
 
-  if (endpoint === '/cases/upload' && (method === 'POST' || method === 'UPLOAD')) {
-    const { uploadCaseMock } = await import('@/mock/handlers/case.handler')
-    let patientId = 'patient-001'
+  if (
+    endpoint === "/cases/upload" &&
+    (method === "POST" || method === "UPLOAD")
+  ) {
+    const { uploadCaseMock } = await import("@/mock/handlers/case.handler");
+    let patientId = "patient-001";
     if (bodyOrParams instanceof FormData) {
-      patientId = (bodyOrParams as FormData).get('patientId')?.toString() ?? patientId
+      patientId =
+        (bodyOrParams as FormData).get("patientId")?.toString() ?? patientId;
     }
-    return uploadCaseMock(patientId) as Promise<ApiResponse<T>>
+    return uploadCaseMock(patientId) as Promise<ApiResponse<T>>;
   }
 
   /* ---- Analysis ---- */
-  if (endpoint.match(/^\/analysis\/[\w-]+$/) && method === 'GET') {
-    const caseId = endpoint.split('/').pop()!
-    const { getAnalysisByCaseIdMock } = await import('@/mock/handlers/analysis.handler')
-    return getAnalysisByCaseIdMock(caseId) as Promise<ApiResponse<T>>
+  if (endpoint.match(/^\/analysis\/[\w-]+$/) && method === "GET") {
+    const caseId = endpoint.split("/").pop()!;
+    const { getAnalysisByCaseIdMock } =
+      await import("@/mock/handlers/analysis.handler");
+    return getAnalysisByCaseIdMock(caseId) as Promise<ApiResponse<T>>;
   }
 
   /* ---- Reports ---- */
-  if (endpoint.match(/^\/reports\/[\w-]+/) && method === 'GET') {
-    const parts = endpoint.split('/')
-    const caseId = parts[2]
-    const { getReportBundleByCaseIdMock } = await import('@/mock/handlers/analysis.handler')
-    const bundleRes = await getReportBundleByCaseIdMock(caseId)
-    if (!bundleRes.success) return bundleRes as unknown as ApiResponse<T>
-    const reportType = parts[3] as 'doctor' | 'patient' | 'general' | undefined
+  if (endpoint.match(/^\/reports\/[\w-]+/) && method === "GET") {
+    const parts = endpoint.split("/");
+    const caseId = parts[2];
+    const { getReportBundleByCaseIdMock } =
+      await import("@/mock/handlers/analysis.handler");
+    const bundleRes = await getReportBundleByCaseIdMock(caseId);
+    if (!bundleRes.success) return bundleRes as unknown as ApiResponse<T>;
+    const reportType = parts[3] as "doctor" | "patient" | "general" | undefined;
     if (reportType && reportType in bundleRes.data) {
-      return { success: true, data: bundleRes.data[reportType] as T, error: null }
+      return {
+        success: true,
+        data: bundleRes.data[reportType] as T,
+        error: null,
+      };
     }
-    return bundleRes as unknown as ApiResponse<T>
+    return bundleRes as unknown as ApiResponse<T>;
   }
 
-  if (endpoint.match(/^\/reports\/[\w-]+\/share$/) && method === 'POST') {
-    return { success: true, data: { sent: true } as T, error: null }
+  if (endpoint.match(/^\/reports\/[\w-]+\/share$/) && method === "POST") {
+    return { success: true, data: { sent: true } as T, error: null };
   }
 
   /* ---- Fallback ---- */
   return {
     success: false,
     data: null as unknown as T,
-    error: { code: 'MOCK_NOT_FOUND', message: `No mock handler for ${method} ${endpoint}` },
-  }
+    error: {
+      code: "MOCK_NOT_FOUND",
+      message: `No mock handler for ${method} ${endpoint}`,
+    },
+  };
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? ''
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
 function setAccessTokenCookie(token: string) {
-  if (typeof document === 'undefined') return
-  const secure = window.location.protocol === 'https:' ? '; Secure' : ''
+  if (typeof document === "undefined") return;
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
   document.cookie = `fundus-access-token=${encodeURIComponent(
     token,
-  )}; Path=/; SameSite=Lax${secure}`
+  )}; Path=/; SameSite=Lax${secure}`;
 }
 
 async function handle401AndRetry<T>(
@@ -124,33 +152,36 @@ async function handle401AndRetry<T>(
 ): Promise<ApiResponse<T>> {
   // Backend refresh requires a refresh token, which we don't persist client-side yet.
   // For now: force logout on 401 to keep client consistent with server.
-  const state = useAuthStore.getState()
-  state.logout()
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('fundus:session-expired'))
+  const state = useAuthStore.getState();
+  state.logout();
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("fundus:session-expired"));
   }
   return {
     success: false,
     data: null as unknown as T,
-    error: { code: 'AUTH_REQUIRED', message: 'Session expired' },
-  }
+    error: { code: "AUTH_REQUIRED", message: "Session expired" },
+  };
 }
 
 function buildUrl(endpoint: string, params?: Record<string, string>) {
   const normalizedEndpoint =
-    endpoint.startsWith(API_PREFIX) || endpoint.startsWith('/api/')
+    endpoint.startsWith(API_PREFIX) || endpoint.startsWith("/api/")
       ? endpoint
-      : `${API_PREFIX}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`
-  const url = new URL(`${API_BASE}${normalizedEndpoint}`)
-  if (params) Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v))
-  return url
+      : `${API_PREFIX}${endpoint.startsWith("/") ? "" : "/"}${endpoint}`;
+  const url = new URL(`${API_BASE}${normalizedEndpoint}`);
+  if (params)
+    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+  return url;
 }
 
 function authHeaders(extra?: HeadersInit): HeadersInit {
-  const token = useAuthStore.getState().accessToken
-  const h: Record<string, string> = { ...(extra as Record<string, string> | undefined) }
-  if (token) h.Authorization = `Bearer ${token}`
-  return h
+  const token = useAuthStore.getState().accessToken;
+  const h: Record<string, string> = {
+    ...(extra as Record<string, string> | undefined),
+  };
+  if (token) h.Authorization = `Bearer ${token}`;
+  return h;
 }
 
 /** GET request — real or mock */
@@ -158,13 +189,13 @@ export async function apiGet<T>(
   endpoint: string,
   params?: Record<string, string>,
 ): Promise<ApiResponse<T>> {
-  if (USE_MOCK) return routeMock<T>('GET', endpoint, params)
+  if (USE_MOCK) return routeMock<T>("GET", endpoint, params);
 
-  const url = buildUrl(endpoint, params)
-  const doFetch = () => fetch(url.toString(), { headers: authHeaders() })
-  const res = await doFetch()
-  if (res.status === 401) return handle401AndRetry<T>(doFetch)
-  return res.json()
+  const url = buildUrl(endpoint, params);
+  const doFetch = () => fetch(url.toString(), { headers: authHeaders() });
+  const res = await doFetch();
+  if (res.status === 401) return handle401AndRetry<T>(doFetch);
+  return res.json();
 }
 
 /** POST request — real or mock */
@@ -172,18 +203,18 @@ export async function apiPost<T>(
   endpoint: string,
   body: unknown,
 ): Promise<ApiResponse<T>> {
-  if (USE_MOCK) return routeMock<T>('POST', endpoint, body)
+  if (USE_MOCK) return routeMock<T>("POST", endpoint, body);
 
-  const url = buildUrl(endpoint)
+  const url = buildUrl(endpoint);
   const doFetch = () =>
     fetch(url.toString(), {
-    method: 'POST',
-    headers: authHeaders({ 'Content-Type': 'application/json' }),
-    body: JSON.stringify(body),
-  })
-  const res = await doFetch()
-  if (res.status === 401) return handle401AndRetry<T>(doFetch)
-  return res.json()
+      method: "POST",
+      headers: authHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify(body),
+    });
+  const res = await doFetch();
+  if (res.status === 401) return handle401AndRetry<T>(doFetch);
+  return res.json();
 }
 
 /** PATCH request — real or mock */
@@ -191,18 +222,37 @@ export async function apiPatch<T>(
   endpoint: string,
   body: unknown,
 ): Promise<ApiResponse<T>> {
-  if (USE_MOCK) return routeMock<T>('POST', endpoint, body)
+  if (USE_MOCK) return routeMock<T>("POST", endpoint, body);
 
-  const url = buildUrl(endpoint)
+  const url = buildUrl(endpoint);
   const doFetch = () =>
     fetch(url.toString(), {
-      method: 'PATCH',
-      headers: authHeaders({ 'Content-Type': 'application/json' }),
+      method: "PATCH",
+      headers: authHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify(body),
-    })
-  const res = await doFetch()
-  if (res.status === 401) return handle401AndRetry<T>(doFetch)
-  return res.json()
+    });
+  const res = await doFetch();
+  if (res.status === 401) return handle401AndRetry<T>(doFetch);
+  return res.json();
+}
+
+/** PUT request — real or mock */
+export async function apiPut<T>(
+  endpoint: string,
+  body: unknown,
+): Promise<ApiResponse<T>> {
+  if (USE_MOCK) return routeMock<T>("PUT", endpoint, body);
+
+  const url = buildUrl(endpoint);
+  const doFetch = () =>
+    fetch(url.toString(), {
+      method: "PUT",
+      headers: authHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify(body),
+    });
+  const res = await doFetch();
+  if (res.status === 401) return handle401AndRetry<T>(doFetch);
+  return res.json();
 }
 
 /** File upload — real or mock */
@@ -210,16 +260,16 @@ export async function apiUpload<T>(
   endpoint: string,
   formData: FormData,
 ): Promise<ApiResponse<T>> {
-  if (USE_MOCK) return routeMock<T>('UPLOAD', endpoint, formData)
+  if (USE_MOCK) return routeMock<T>("UPLOAD", endpoint, formData);
 
-  const url = buildUrl(endpoint)
+  const url = buildUrl(endpoint);
   const doFetch = () =>
     fetch(url.toString(), {
-    method: 'POST',
-    headers: authHeaders(),
-    body: formData,
-  })
-  const res = await doFetch()
-  if (res.status === 401) return handle401AndRetry<T>(doFetch)
-  return res.json()
+      method: "POST",
+      headers: authHeaders(),
+      body: formData,
+    });
+  const res = await doFetch();
+  if (res.status === 401) return handle401AndRetry<T>(doFetch);
+  return res.json();
 }

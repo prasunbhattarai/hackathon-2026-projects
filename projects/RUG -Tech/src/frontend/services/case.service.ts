@@ -3,6 +3,7 @@ import type { ApiResponse, PaginatedResponse } from "@/types/api.types";
 import type {
   CaseDetail,
   CaseListFilter,
+  CaseStatusResponse,
   CaseStatus,
   CaseSummary,
 } from "@/types/case.types";
@@ -59,14 +60,14 @@ export async function getTriageQueue(
 /** Approve a case after doctor review */
 export async function approveCase(
   id: string,
-): Promise<ApiResponse<CaseDetail>> {
-  return apiPatch<CaseDetail>(`/cases/${id}/approve`, {});
+): Promise<ApiResponse<CaseStatusResponse>> {
+  return apiPatch<CaseStatusResponse>(`/cases/${id}/approve`, {});
 }
 
 /** Reject a case with reason */
 export async function rejectCase(
   id: string,
   reason: string,
-): Promise<ApiResponse<CaseDetail>> {
-  return apiPatch<CaseDetail>(`/cases/${id}/reject`, { reason });
+): Promise<ApiResponse<CaseStatusResponse>> {
+  return apiPatch<CaseStatusResponse>(`/cases/${id}/reject`, { reason });
 }

@@ -1,7 +1,7 @@
 """
 Report schemas.
 
-Contract ref: CONTRACT.md §8
+Contract ref: CONTRACT.md 
 """
 
 from pydantic import BaseModel

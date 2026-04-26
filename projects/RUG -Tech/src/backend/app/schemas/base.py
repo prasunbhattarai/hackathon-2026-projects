@@ -28,13 +28,8 @@ class ApiResponse(BaseModel, Generic[DataT]):
         return cls(success=True, data=data, error=None)
 
     @classmethod
-    def fail(
-        cls,
-        code: str,
-        message: str,
-        details: dict[str, list[str]] | None = None,
-    ) -> "ApiResponse[None]":
-        return cls(
+    def fail(cls, code: str, message: str, details: dict[str, list[str]] | None = None) -> "ApiResponse[None]":
+        return ApiResponse[None](
             success=False,
             data=None,
             error=ApiError(code=code, message=message, details=details),
