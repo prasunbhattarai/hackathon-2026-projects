@@ -161,47 +161,30 @@ def upload_case(
         )
     image.file.seek(0)
 
-    # ── upload to Cloudinary ───────────────────────────────────────────────
-    try:
-        from app.utils.cloudinary_client import upload_image
-        upload_result = upload_image(image, folder="fundusai/fundus")
-        image_url = upload_result["secure_url"]
-        image_public_id = upload_result.get("public_id")
-    except Exception as exc:
-        logger.error("Cloudinary upload failed: %s", exc, exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Image storage service unavailable. Please try again.",
-        )
-
-    # ── create case row ────────────────────────────────────────────────────
+    # ── create case row (Cloudinary + Celery wired in Chunk 5) ─────────────
     case_id = uuid.uuid4()
+    task_id = str(uuid.uuid4())  # placeholder; Celery will overwrite in Chunk 5
+    placeholder_url = f"https://res.cloudinary.com/placeholder/fundusai/{case_id}.jpg"
 
     case = Case(
         id=case_id,
         patient_id=uuid.UUID(patient_id),
         clinic_id=patient.clinic_id,
         submitted_by=user.id,
-        image_url=image_url,
-        image_public_id=image_public_id,
+        image_url=placeholder_url,
         image_quality=ImageQuality.GOOD.value,  # quality check happens in AI pipeline
         status=CaseStatus.PROCESSING.value,
+        task_id=task_id,
     )
     db.add(case)
     db.commit()
     db.refresh(case)
 
-    # ── dispatch Celery task ───────────────────────────────────────────────
-    from app.worker.tasks import run_analysis
-    celery_task = run_analysis.delay(str(case.id))
-    case.task_id = celery_task.id
-    db.commit()
-
     return UploadCaseData(
         caseId=str(case.id),
         status=CaseStatus.PROCESSING,
         qualityCheck=ImageQuality.GOOD,
-        taskId=celery_task.id,
+        taskId=task_id,
         message="Image uploaded and queued for analysis",
     )
 

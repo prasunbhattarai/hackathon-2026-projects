@@ -182,26 +182,20 @@ def upload_case(
         patient_id=uuid.UUID(patient_id),
         clinic_id=patient.clinic_id,
         submitted_by=user.id,
-        image_url=image_url,
-        image_public_id=image_public_id,
+        image_url=placeholder_url,
         image_quality=ImageQuality.GOOD.value,  # quality check happens in AI pipeline
         status=CaseStatus.PROCESSING.value,
+        task_id=task_id,
     )
     db.add(case)
     db.commit()
     db.refresh(case)
 
-    # ── dispatch Celery task ───────────────────────────────────────────────
-    from app.worker.tasks import run_analysis
-    celery_task = run_analysis.delay(str(case.id))
-    case.task_id = celery_task.id
-    db.commit()
-
     return UploadCaseData(
         caseId=str(case.id),
         status=CaseStatus.PROCESSING,
         qualityCheck=ImageQuality.GOOD,
-        taskId=celery_task.id,
+        taskId=task_id,
         message="Image uploaded and queued for analysis",
     )
 
