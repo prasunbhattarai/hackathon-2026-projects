@@ -1,7 +1,7 @@
 
 
 from __future__ import annotations
-
+from report import generate_report_json, generate_patient_report
 import json
 import sys
 from pathlib import Path
@@ -22,6 +22,11 @@ def run_prediction(image_path: Path | None = None) -> Dict[str, Dict[str, object
 	return predict_image(target)
 
 
+
+
+
 if __name__ == "__main__":
 	result = run_prediction(TEST_IMAGE)
-	print(json.dumps(result, indent=2))
+
+	generate_report_json(json.dumps(result, indent=2))
+	generate_patient_report(json.dumps(result, indent=2))
