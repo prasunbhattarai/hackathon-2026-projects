@@ -17,7 +17,6 @@ export interface PDFDownloadButtonProps {
 const options = [
   { id: 'doctor' as const, label: 'Doctor Report PDF', type: 'doctor' as const },
   { id: 'patient' as const, label: 'Patient Report PDF', type: 'patient' as const },
-  { id: 'full' as const, label: 'Full Report PDF', type: 'general' as const },
 ]
 
 export const PDFDownloadButton = ({

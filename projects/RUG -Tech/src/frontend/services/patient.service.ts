@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from '@/services/api.client'
+import { apiGet, apiPost, apiPatch } from '@/services/api.client'
 import type { ApiResponse, PaginatedResponse } from '@/types/api.types'
 import type {
   CreatePatientRequest,
@@ -12,13 +12,11 @@ export async function getPatients(filter: {
   page?: number
   limit?: number
   search?: string
-  clinicId?: string
 }): Promise<ApiResponse<PaginatedResponse<PatientSummary>>> {
   const params: Record<string, string> = {}
   if (filter.page) params.page = String(filter.page)
   if (filter.limit) params.limit = String(filter.limit)
   if (filter.search) params.search = filter.search
-  if (filter.clinicId) params.clinicId = filter.clinicId
   return apiGet<PaginatedResponse<PatientSummary>>('/patients', params)
 }
 
@@ -41,5 +39,5 @@ export async function updatePatient(
   id: string,
   data: Partial<CreatePatientRequest>,
 ): Promise<ApiResponse<Patient>> {
-  return apiPost<Patient>(`/patients/${id}`, data)
+  return apiPatch<Patient>(`/patients/${id}`, data)
 }

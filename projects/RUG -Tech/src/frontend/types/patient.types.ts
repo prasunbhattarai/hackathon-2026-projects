@@ -20,7 +20,7 @@ export interface PatientSummary {
 	fullName: string;
 	medicalId: string;
 	age: number;
-	lastCaseDate: string;
+	lastCaseDate: string | null;
 	totalCases: number;
 }
 

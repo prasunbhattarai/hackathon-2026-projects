@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { PageHeader } from '@/Components/Layout/PageHeader'
 import { Button } from '@/Components/ui/Button'
@@ -8,33 +8,28 @@ import { UserRole } from '@/types/auth.types'
 import { RoleGateWrapper } from '@/features/auth/components/RoleGateWrapper'
 import { ClinicTable } from '@/features/admin/components/ClinicTable'
 import { CreateClinicForm } from '@/features/admin/components/CreateClinicForm'
-import { clinicsMock } from '@/mock/data/clinics.mock'
 import type { Clinic } from '@/types/admin.types'
 import { ROUTES } from '@/constants/routes'
+import { useClinics } from '@/features/admin/hooks/useAdminData'
+import { createClinic } from '@/services/admin.service'
+import { useToast } from '@/hooks/useToast'
 
 export default function AdminClinicsPage() {
-  const [clinics, setClinics] = useState<Clinic[]>([])
-  const [loading, setLoading] = useState(true)
+  const { success, error } = useToast()
+  const clinicsQuery = useClinics()
+  const clinics = (clinicsQuery.data?.data ?? []) as Clinic[]
+  const loading = clinicsQuery.isLoading
   const [showCreate, setShowCreate] = useState(false)
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setClinics(clinicsMock)
-      setLoading(false)
-    }, 400)
-    return () => clearTimeout(timer)
-  }, [])
-
-  const handleCreate = (data: { name: string; address: string; phone: string }) => {
-    const newClinic: Clinic = {
-      id: `clinic-new-${Date.now()}`,
-      ...data,
-      isActive: true,
-      createdAt: new Date().toISOString(),
-      userCount: 0,
-      caseCount: 0,
+  const handleCreate = async (data: { name: string; address: string; phone: string }) => {
+    const res = await createClinic(data)
+    if (!res.success) {
+      error('Create clinic failed', res.error?.message)
+      return
     }
-    setClinics((prev) => [...prev, newClinic])
+    success('Clinic created')
+    setShowCreate(false)
+    await clinicsQuery.refetch()
   }
 
   return (

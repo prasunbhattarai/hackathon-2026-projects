@@ -1,11 +1,11 @@
 'use client'
 
 import { cn } from '@/lib/cn'
-import { casesMock } from '@/mock/data/cases.mock'
 import { DonutChart } from '@/Components/ui/donut-chart'
 import type { DonutChartSegment } from '@/Components/ui/donut-chart'
 import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { useCases } from '@/features/cases/hooks/useCases'
 
 interface TriageSummaryCardProps {
   className?: string
@@ -20,12 +20,14 @@ const tiers = [
 
 export const TriageSummaryCard = ({ className }: TriageSummaryCardProps) => {
   const [hoveredSegment, setHoveredSegment] = useState<DonutChartSegment | null>(null)
+  const casesQuery = useCases({ page: 1, limit: 100 })
+  const cases = casesQuery.data?.data?.items ?? []
 
   const { total, counts, chartData } = useMemo(() => {
-    const total = casesMock.length
+    const total = cases.length
     const counts = tiers.map((t) => ({
       ...t,
-      count: casesMock.filter((c) => c.priorityTier === t.key).length,
+      count: cases.filter((c) => c.priorityTier === t.key).length,
     }))
     const chartData = counts.map(t => ({
       value: t.count,
@@ -33,13 +35,13 @@ export const TriageSummaryCard = ({ className }: TriageSummaryCardProps) => {
       color: t.color,
     }))
     return { total, counts, chartData }
-  }, [])
+  }, [cases])
 
   const activeSegment = useMemo(() => chartData.find(d => d.label === hoveredSegment?.label), [hoveredSegment, chartData])
 
   const displayValue = activeSegment?.value ?? total
   const displayLabel = activeSegment?.label ?? "Total Cases"
-  const displayPercentage = activeSegment ? (activeSegment.value / total) * 100 : 100
+  const displayPercentage = activeSegment && total > 0 ? (activeSegment.value / total) * 100 : 100
 
   return (
     <div
@@ -72,7 +74,7 @@ export const TriageSummaryCard = ({ className }: TriageSummaryCardProps) => {
                   {displayLabel}
                 </p>
                 <p className="text-3xl font-bold text-foreground">
-                  {displayValue}
+                  {casesQuery.isLoading ? '…' : displayValue}
                 </p>
                 {activeSegment && (
                     <p className="text-md font-medium text-muted-foreground">

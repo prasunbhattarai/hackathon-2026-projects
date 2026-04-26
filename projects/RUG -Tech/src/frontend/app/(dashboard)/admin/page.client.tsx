@@ -1,43 +1,24 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Building2, Users, ArrowRight } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { PageHeader } from '@/Components/Layout/PageHeader'
-import { Button } from '@/Components/ui/Button'
 import { Card, CardContent } from '@/Components/ui/Card'
 import { ROUTES } from '@/constants/routes'
 import { UserRole } from '@/types/auth.types'
 import { RoleGateWrapper } from '@/features/auth/components/RoleGateWrapper'
 import { PlatformStatsGrid } from '@/features/admin/components/PlatformStatsGrid'
-import type { PlatformStats } from '@/types/admin.types'
-import { casesMock } from '@/mock/data/cases.mock'
-import { clinicsMock } from '@/mock/data/clinics.mock'
-import { usersMock } from '@/mock/data/users.mock'
 import { staggerContainer, staggerItem } from '@/animations/page.variants'
-
-const mockStats: PlatformStats = {
-  totalClinics: clinicsMock.length,
-  totalUsers: usersMock.length,
-  totalCases: casesMock.length,
-  todayCases: 4,
-  criticalCases: casesMock.filter((c) => c.priorityTier === 'critical').length,
-  avgProcessingTimeMs: 3200,
-}
+import { useClinics, usePlatformStats } from '@/features/admin/hooks/useAdminData'
 
 export default function AdminPageClient() {
   const router = useRouter()
-  const [stats, setStats] = useState<PlatformStats | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setStats(mockStats)
-      setLoading(false)
-    }, 400)
-    return () => clearTimeout(timer)
-  }, [])
+  const statsQuery = usePlatformStats()
+  const clinicsQuery = useClinics()
+  const stats = statsQuery.data?.data ?? null
+  const loading = statsQuery.isLoading
+  const clinicCount = clinicsQuery.data?.data?.length ?? 0
 
   return (
     <RoleGateWrapper allowedRoles={[UserRole.SUPER_ADMIN]}>
@@ -71,7 +52,7 @@ export default function AdminPageClient() {
                     Manage Clinics
                   </p>
                   <p className="text-xs text-[var(--text-muted)]">
-                    {clinicsMock.length} registered clinics
+                    {stats?.totalClinics ?? clinicCount} registered clinics
                   </p>
                 </div>
               </div>
@@ -93,7 +74,7 @@ export default function AdminPageClient() {
                     Manage Users
                   </p>
                   <p className="text-xs text-[var(--text-muted)]">
-                    {usersMock.length} platform users
+                    {stats?.totalUsers ?? 0} platform users
                   </p>
                 </div>
               </div>

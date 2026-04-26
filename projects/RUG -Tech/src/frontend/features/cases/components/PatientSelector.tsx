@@ -6,7 +6,7 @@ import { cn } from '@/lib/cn'
 import { Input } from '@/Components/ui/Input'
 import { Avatar } from '@/Components/ui/Avatar'
 import type { Patient } from '@/types/patient.types'
-import { patientsMock } from '@/mock/data/patients.mock'
+import { usePatients } from '@/features/patients/hooks/usePatients'
 
 export interface PatientSelectorProps {
   selectedPatient: Patient | null
@@ -26,15 +26,28 @@ export const PatientSelector = ({
   const deferredQuery = useDeferredValue(query)
   const containerRef = useRef<HTMLDivElement>(null)
 
+  const patientsQuery = usePatients({
+    page: 1,
+    limit: 8,
+    search: deferredQuery.trim() || undefined,
+  })
+
   const filteredPatients = useMemo(() => {
-    if (!deferredQuery.trim()) return patientsMock.slice(0, 8)
-    const q = deferredQuery.toLowerCase()
-    return patientsMock.filter(
-      (p) =>
-        p.fullName.toLowerCase().includes(q) ||
-        p.medicalId.toLowerCase().includes(q),
-    ).slice(0, 8)
-  }, [deferredQuery])
+    const items = patientsQuery.data?.data?.items ?? []
+    // PatientSelector needs full Patient object today; backend list only returns summaries.
+    // We project what we can; caller typically only uses id/fullName/medicalId.
+    return items.map((p) => ({
+      id: p.id,
+      clinicId: '',
+      fullName: p.fullName,
+      dateOfBirth: '1900-01-01',
+      gender: 'other',
+      contact: '',
+      medicalId: p.medicalId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    })) as unknown as Patient[]
+  }, [patientsQuery.data])
 
   // Close dropdown on outside click
   useEffect(() => {

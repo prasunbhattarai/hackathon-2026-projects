@@ -1,23 +1,21 @@
 'use client'
 
-import { useState, useEffect, use } from 'react'
+import { use, useState } from 'react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/cn'
 import { PageHeader } from '@/Components/Layout/PageHeader'
 import { Tabs } from '@/Components/ui/Tabs'
 import { Skeleton } from '@/Components/ui/Skeleton'
 import { ROUTES } from '@/constants/routes'
-import { patientsMock } from '@/mock/data/patients.mock'
-import { caseSummariesMock } from '@/mock/data/cases.mock'
-import { casesMock } from '@/mock/data/cases.mock'
 import { PatientDetailHeader } from '@/features/patients/components/PatientDetailHeader'
 import { PatientCaseHistory } from '@/features/patients/components/PatientCaseHistory'
 import { staggerContainer, staggerItem } from '@/animations/page.variants'
-import type { Patient } from '@/types/patient.types'
+import { usePatientDetail } from '@/features/patients/hooks/usePatientDetail'
+import type { PatientDetail } from '@/types/patient.types'
 import type { CaseSummary } from '@/types/case.types'
 
 interface PatientInfoPanelProps {
-  patient: Patient
+  patient: PatientDetail
 }
 
 const PatientInfoPanel = ({ patient }: PatientInfoPanelProps) => (
@@ -45,28 +43,12 @@ const PatientInfoPanel = ({ patient }: PatientInfoPanelProps) => (
 
 export default function PatientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const [isLoading, setIsLoading] = useState(true)
-  const [patient, setPatient] = useState<Patient | null>(null)
-  const [cases, setCases] = useState<CaseSummary[]>([])
   const [activeTab, setActiveTab] = useState('history')
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const p = patientsMock.find((pt) => pt.id === id) ?? null
-      setPatient(p)
-      if (p) {
-        const patientCaseIds = casesMock
-          .filter((c) => c.patientId === p.id)
-          .map((c) => c.id)
-        const filtered = caseSummariesMock.filter((s) =>
-          patientCaseIds.includes(s.id),
-        )
-        setCases(filtered)
-      }
-      setIsLoading(false)
-    }, 400)
-    return () => clearTimeout(timer)
-  }, [id])
+  const patientQuery = usePatientDetail(id)
+  const isLoading = patientQuery.isLoading
+  const patient = patientQuery.data?.data ?? null
+  const cases = (patient?.cases ?? []) as CaseSummary[]
 
   if (isLoading) {
     return (

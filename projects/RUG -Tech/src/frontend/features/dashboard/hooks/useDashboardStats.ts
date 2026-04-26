@@ -1,9 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { casesMock, caseSummariesMock } from '@/mock/data/cases.mock'
-import { analysisResultsMock } from '@/mock/data/analysis.mock'
+import { useMemo } from 'react'
 import { CaseStatus, type CaseSummary } from '@/types/case.types'
+import { useCases } from '@/features/cases/hooks/useCases'
+import { usePlatformStats } from '@/features/admin/hooks/useAdminData'
+import { useAuthStore } from '@/store/authStore'
+import { UserRole } from '@/types/auth.types'
 
 export interface DashboardStats {
   totalCases: number
@@ -24,71 +26,62 @@ export interface DashboardStats {
 }
 
 export function useDashboardStats(): DashboardStats {
-  const [isLoading, setIsLoading] = useState(true)
-  const [stats, setStats] = useState<Omit<DashboardStats, 'isLoading'> | null>(null)
+  const role = useAuthStore((s) => s.user?.role ?? null)
+  const statsQuery = usePlatformStats()
+  const casesQuery = useCases({ page: 1, limit: 100 })
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const total = casesMock.length
-      const pendingReview = casesMock.filter(
-        (c) => c.status === CaseStatus.AWAITING_REVIEW,
-      ).length
-      const criticalCases = casesMock.filter(
-        (c) => c.priorityTier === 'critical',
-      ).length
-      const qualityFailures = casesMock.filter(
-        (c) => c.status === CaseStatus.QUALITY_FAILED,
-      ).length
+  const cases = casesQuery.data?.data?.items ?? []
 
-      const today = new Date().toISOString().slice(0, 10)
-      const todayCases = casesMock.filter(
-        (c) => c.createdAt.slice(0, 10) === today,
-      ).length
+  const computed = useMemo(() => {
+    const total = cases.length
+    const pendingReview = cases.filter((c) => c.status === CaseStatus.AWAITING_REVIEW).length
+    const criticalCases = cases.filter((c) => c.priorityTier === 'critical').length
+    const qualityFailures = cases.filter((c) => c.status === CaseStatus.QUALITY_FAILED).length
 
-      const avgScore =
-        casesMock.reduce((sum, c) => sum + c.priorityScore, 0) / total
+    const today = new Date().toISOString().slice(0, 10)
+    const todayCases = cases.filter((c) => c.createdAt.slice(0, 10) === today).length
 
-      // DR severity from analysis results
-      const dist = { none: 0, mild: 0, moderate: 0, severe: 0, pdr: 0 }
-      for (const a of analysisResultsMock) {
-        const s = a.dr.status.toLowerCase() as keyof typeof dist
-        if (s in dist) dist[s]++
+    const avgPriorityScore =
+      total > 0 ? Number((cases.reduce((sum, c) => sum + c.priorityScore, 0) / total).toFixed(2)) : 0
+
+    const recentCases = [...cases]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 8) as CaseSummary[]
+
+    return {
+      totalCases: total,
+      pendingReview,
+      criticalCases,
+      todayCases,
+      avgPriorityScore,
+      qualityFailures,
+      recentCases,
+    }
+  }, [cases])
+
+  const platform = statsQuery.data?.data ?? null
+
+  const base = role === UserRole.SUPER_ADMIN && platform
+    ? {
+        totalCases: platform.totalCases,
+        criticalCases: platform.criticalCases,
+        todayCases: platform.todayCases,
+        avgPriorityScore: computed.avgPriorityScore,
+      }
+    : {
+        totalCases: computed.totalCases,
+        criticalCases: computed.criticalCases,
+        todayCases: computed.todayCases,
+        avgPriorityScore: computed.avgPriorityScore,
       }
 
-      const recentCases = [...caseSummariesMock]
-        .sort(
-          (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-        )
-        .slice(0, 8)
-
-      setStats({
-        totalCases: total,
-        pendingReview,
-        criticalCases,
-        todayCases,
-        avgPriorityScore: Number(avgScore.toFixed(2)),
-        qualityFailures,
-        severityDistribution: dist,
-        recentCases,
-      })
-      setIsLoading(false)
-    }, 600)
-
-    return () => clearTimeout(timer)
-  }, [])
-
   return {
-    totalCases: stats?.totalCases ?? 0,
-    pendingReview: stats?.pendingReview ?? 0,
-    criticalCases: stats?.criticalCases ?? 0,
-    todayCases: stats?.todayCases ?? 0,
-    avgPriorityScore: stats?.avgPriorityScore ?? 0,
-    qualityFailures: stats?.qualityFailures ?? 0,
-    severityDistribution: stats?.severityDistribution ?? {
-      none: 0, mild: 0, moderate: 0, severe: 0, pdr: 0,
-    },
-    recentCases: stats?.recentCases ?? [],
-    isLoading,
+    ...base,
+    pendingReview: computed.pendingReview,
+    qualityFailures: computed.qualityFailures,
+    // Backend does not currently provide DR severity distribution without per-case analysis aggregation.
+    severityDistribution: { none: 0, mild: 0, moderate: 0, severe: 0, pdr: 0 },
+    recentCases: computed.recentCases,
+    isLoading: casesQuery.isLoading || (role === UserRole.SUPER_ADMIN && statsQuery.isLoading),
   }
 }

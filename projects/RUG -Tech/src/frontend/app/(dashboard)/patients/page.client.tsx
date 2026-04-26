@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Plus, Search } from 'lucide-react'
@@ -11,43 +11,18 @@ import { Avatar } from '@/Components/ui/Avatar'
 import { Badge } from '@/Components/ui/Badge'
 import { SkeletonTableRow } from '@/Components/ui/Skeleton'
 import { ROUTES } from '@/constants/routes'
-import { patientsMock } from '@/mock/data/patients.mock'
-import { casesMock } from '@/mock/data/cases.mock'
 import { staggerContainer, staggerItem } from '@/animations/page.variants'
-import type { Patient } from '@/types/patient.types'
-
-function computeAge(dob: string): number {
-  const now = new Date()
-  const d = new Date(dob)
-  let age = now.getFullYear() - d.getFullYear()
-  const m = now.getMonth() - d.getMonth()
-  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--
-  return age
-}
-
-function getCaseCount(patientId: string): number {
-  return casesMock.filter((c) => c.patientId === patientId).length
-}
+import { usePatients } from '@/features/patients/hooks/usePatients'
+import type { PatientSummary } from '@/types/patient.types'
 
 export default function PatientsPageClient() {
   const router = useRouter()
   const [search, setSearch] = useState('')
-  const [isLoading, setIsLoading] = useState(true)
-  const [patients, setPatients] = useState<Patient[]>([])
+  const patientsQuery = usePatients({ page: 1, limit: 50, search: search.trim() || undefined })
+  const patients = (patientsQuery.data?.data?.items ?? []) as PatientSummary[]
+  const isLoading = patientsQuery.isLoading
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setPatients(patientsMock)
-      setIsLoading(false)
-    }, 500)
-    return () => clearTimeout(timer)
-  }, [])
-
-  const filtered = patients.filter(
-    (p) =>
-      p.fullName.toLowerCase().includes(search.toLowerCase()) ||
-      p.medicalId.toLowerCase().includes(search.toLowerCase()),
-  )
+  const filtered = useMemo(() => patients, [patients])
 
   return (
     <motion.div variants={staggerContainer} initial="initial" animate="animate">
@@ -114,8 +89,6 @@ export default function PatientsPageClient() {
 
               {!isLoading &&
                 filtered.map((p) => {
-                  const age = computeAge(p.dateOfBirth)
-                  const cases = getCaseCount(p.id)
                   return (
                     <tr
                       key={p.id}
@@ -134,17 +107,17 @@ export default function PatientsPageClient() {
                         {p.medicalId}
                       </td>
                       <td className="px-4 py-2.5 text-sm text-[var(--text-secondary)]">
-                        {age}
+                        {p.age}
                       </td>
                       <td className="px-4 py-2.5 text-sm text-[var(--text-secondary)] capitalize">
-                        {p.gender}
+                        —
                       </td>
                       <td className="px-4 py-2.5 font-mono text-xs text-[var(--text-muted)]">
-                        {p.contact}
+                        —
                       </td>
                       <td className="px-4 py-2.5">
-                        <Badge variant={cases > 3 ? 'medium' : 'none'} size="sm">
-                          {cases}
+                        <Badge variant={p.totalCases > 3 ? 'medium' : 'none'} size="sm">
+                          {p.totalCases}
                         </Badge>
                       </td>
                     </tr>

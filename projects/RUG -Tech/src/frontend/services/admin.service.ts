@@ -1,5 +1,5 @@
 import { apiGet, apiPost } from '@/services/api.client'
-import type { ApiResponse, PaginatedResponse } from '@/types/api.types'
+import type { ApiResponse } from '@/types/api.types'
 import type {
   Clinic,
   CreateClinicRequest,
@@ -8,10 +8,8 @@ import type {
 import type { User } from '@/types/auth.types'
 
 /** Get all clinics */
-export async function getClinics(): Promise<
-  ApiResponse<PaginatedResponse<Clinic>>
-> {
-  return apiGet<PaginatedResponse<Clinic>>('/admin/clinics')
+export async function getClinics(): Promise<ApiResponse<Clinic[]>> {
+  return apiGet<Clinic[]>('/admin/clinics')
 }
 
 /** Create a new clinic */
@@ -24,10 +22,10 @@ export async function createClinic(
 /** Get all users, optionally filtered by clinic */
 export async function getUsers(
   clinicId?: string,
-): Promise<ApiResponse<PaginatedResponse<User>>> {
+): Promise<ApiResponse<User[]>> {
   const params: Record<string, string> = {}
   if (clinicId) params.clinicId = clinicId
-  return apiGet<PaginatedResponse<User>>('/admin/users', params)
+  return apiGet<User[]>('/admin/users', params)
 }
 
 /** Create a new user account */

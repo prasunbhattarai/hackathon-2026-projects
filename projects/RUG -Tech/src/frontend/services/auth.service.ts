@@ -16,9 +16,9 @@ export async function logout(): Promise<ApiResponse<{ message: string }>> {
 
 /** Refresh access token */
 export async function refreshToken(
-  token: string,
+  refreshToken: string,
 ): Promise<ApiResponse<{ accessToken: string }>> {
-  return apiPost<{ accessToken: string }>('/auth/refresh', { token })
+  return apiPost<{ accessToken: string }>('/auth/refresh', { refreshToken })
 }
 
 /** Get the currently authenticated user profile */

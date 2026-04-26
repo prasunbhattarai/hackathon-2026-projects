@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Upload } from 'lucide-react'
@@ -9,15 +9,13 @@ import { Button } from '@/Components/ui/Button'
 import { Badge } from '@/Components/ui/Badge'
 import { ROUTES } from '@/constants/routes'
 import type { CaseSummary } from '@/types/case.types'
-import { caseSummariesMock } from '@/mock/data/cases.mock'
 import { CaseFilterBar } from '@/features/cases/components/CaseFilterBar'
 import { TriageQueue } from '@/features/cases/components/TriageQueue'
 import { staggerContainer, staggerItem } from '@/animations/page.variants'
+import { useCases } from '@/features/cases/hooks/useCases'
 
 export default function CasesPageClient() {
   const router = useRouter()
-  const [isLoading, setIsLoading] = useState(true)
-  const [cases, setCases] = useState<(CaseSummary & { drStatus: string })[]>([])
 
   // Filters
   const [statusFilter, setStatusFilter] = useState('all')
@@ -25,13 +23,15 @@ export default function CasesPageClient() {
   const [sortBy, setSortBy] = useState('newest')
   const [dateRange, setDateRange] = useState('all')
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setCases(caseSummariesMock as (CaseSummary & { drStatus: string })[])
-      setIsLoading(false)
-    }, 500)
-    return () => clearTimeout(timer)
-  }, [])
+  const casesQuery = useCases({
+    page: 1,
+    limit: 50,
+    status: statusFilter !== 'all' ? (statusFilter as never) : undefined,
+    priorityTier: priorityFilter !== 'all' ? (priorityFilter as never) : undefined,
+  })
+
+  const cases = (casesQuery.data?.data?.items ?? []) as (CaseSummary & { drStatus: string })[]
+  const isLoading = casesQuery.isLoading
 
   // Status counts
   const statusCounts = useMemo(() => {
@@ -48,16 +48,6 @@ export default function CasesPageClient() {
   const filteredCases = useMemo(() => {
     let result = [...cases]
 
-    // Status filter
-    if (statusFilter !== 'all') {
-      result = result.filter((c) => c.status === statusFilter)
-    }
-
-    // Priority filter
-    if (priorityFilter !== 'all') {
-      result = result.filter((c) => c.priorityTier === priorityFilter)
-    }
-
     // Sort
     if (sortBy === 'priority') {
       result.sort((a, b) => b.priorityScore - a.priorityScore)
@@ -68,7 +58,7 @@ export default function CasesPageClient() {
     }
 
     return result
-  }, [cases, statusFilter, priorityFilter, sortBy])
+  }, [cases, sortBy])
 
   const resetFilters = () => {
     setStatusFilter('all')
