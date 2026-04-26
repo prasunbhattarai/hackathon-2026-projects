@@ -217,6 +217,7 @@ def list_cases(
     page: int = 1,
     limit: int = 20,
     status_filter: CaseStatus | None = None,
+    priority_tier: str | None = None,
     patient_id: str | None = None,
 ) -> PaginatedResponse[CaseSummaryOut]:
     clinic_id = _clinic_filter(user)
@@ -226,6 +227,8 @@ def list_cases(
         query = query.where(Case.clinic_id == clinic_id)
     if status_filter:
         query = query.where(Case.status == status_filter.value)
+    if priority_tier:
+        query = query.where(Case.priority_tier == priority_tier)
     if patient_id:
         query = query.where(Case.patient_id == uuid.UUID(patient_id))
 

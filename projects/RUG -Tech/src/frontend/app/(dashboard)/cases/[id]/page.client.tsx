@@ -1,26 +1,28 @@
-'use client'
+"use client";
 
-import { motion } from 'framer-motion'
-import dynamic from 'next/dynamic'
-import { Loader2 } from 'lucide-react'
-import { cn } from '@/lib/cn'
-import { Skeleton } from '@/Components/ui/Skeleton'
-import { Badge } from '@/Components/ui/Badge'
-import { useCaseDetail } from '@/features/cases/hooks/useCaseDetail'
-import { CaseDetailHeader } from '@/features/cases/components/CaseDetailHeader'
-import { DiagnosisResultPanel } from '@/features/analysis/components/DiagnosisResultPanel'
-import { ProcessingStatusTracker } from '@/features/cases/components/ProcessingStatusTracker'
-import { LiveIndicator } from '@/Components/shared/LiveIndicator'
-import { CaseStatus } from '@/types/case.types'
+import { motion } from "framer-motion";
+import dynamic from "next/dynamic";
+import { Loader2 } from "lucide-react";
+import { cn } from "@/lib/cn";
+import { Skeleton } from "@/Components/ui/Skeleton";
+import { Badge } from "@/Components/ui/Badge";
+import { useCaseDetail } from "@/features/cases/hooks/useCaseDetail";
+import { CaseDetailHeader } from "@/features/cases/components/CaseDetailHeader";
+import { DiagnosisResultPanel } from "@/features/analysis/components/DiagnosisResultPanel";
+import { ProcessingStatusTracker } from "@/features/cases/components/ProcessingStatusTracker";
+import { LiveIndicator } from "@/Components/shared/LiveIndicator";
+import { CaseStatus } from "@/types/case.types";
 
 const HeatmapViewer = dynamic(
   () =>
-    import('@/features/analysis/components/HeatmapViewer').then((m) => m.HeatmapViewer),
+    import("@/features/analysis/components/HeatmapViewer").then(
+      (m) => m.HeatmapViewer,
+    ),
   { ssr: false },
-)
+);
 
 export default function CaseDetailPageClient({ id }: { id: string }) {
-  const { caseData, analysis, isLoading } = useCaseDetail(id)
+  const { caseData, analysis, isLoading } = useCaseDetail(id);
 
   if (isLoading) {
     return (
@@ -36,7 +38,7 @@ export default function CaseDetailPageClient({ id }: { id: string }) {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   if (!caseData) {
@@ -44,11 +46,10 @@ export default function CaseDetailPageClient({ id }: { id: string }) {
       <div className="flex flex-col items-center py-16 gap-3">
         <p className="text-sm text-[var(--text-muted)]">Case not found</p>
       </div>
-    )
+    );
   }
 
-  const isProcessing =
-    caseData.status === CaseStatus.PROCESSING || caseData.status === CaseStatus.PENDING
+  const isProcessing = caseData.status === CaseStatus.PROCESSING;
 
   return (
     <div>
@@ -57,8 +58,8 @@ export default function CaseDetailPageClient({ id }: { id: string }) {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className={cn(
-            'flex items-center justify-center gap-3 px-4 py-3 mb-6',
-            'bg-[var(--accent)]/10 border border-[var(--accent)]/20 rounded-[4px]',
+            "flex items-center justify-center gap-3 px-4 py-3 mb-6",
+            "bg-[var(--accent)]/10 border border-[var(--accent)]/20 rounded-[4px]",
           )}
         >
           <div className="relative">
@@ -81,7 +82,7 @@ export default function CaseDetailPageClient({ id }: { id: string }) {
         <motion.div
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.4, ease: 'easeOut' }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
           className="flex flex-col gap-4"
         >
           <HeatmapViewer
@@ -98,7 +99,10 @@ export default function CaseDetailPageClient({ id }: { id: string }) {
               transition={{ delay: 0.3 }}
               className="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[4px] p-4"
             >
-              <ProcessingStatusTracker caseId={id} currentStatus={caseData.status} />
+              <ProcessingStatusTracker
+                caseId={id}
+                currentStatus={caseData.status}
+              />
             </motion.div>
           )}
         </motion.div>
@@ -106,7 +110,7 @@ export default function CaseDetailPageClient({ id }: { id: string }) {
         <motion.div
           initial={{ opacity: 0, x: 30 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.4, ease: 'easeOut', delay: 0.1 }}
+          transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
         >
           {analysis ? (
             <DiagnosisResultPanel analysis={analysis} caseId={id} />
@@ -132,6 +136,5 @@ export default function CaseDetailPageClient({ id }: { id: string }) {
         </motion.div>
       </div>
     </div>
-  )
+  );
 }
-

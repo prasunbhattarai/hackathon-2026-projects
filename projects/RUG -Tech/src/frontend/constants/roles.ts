@@ -1,18 +1,14 @@
 export const ROLES = {
-  SUPER_ADMIN: 'super_admin',
-  CLINIC_ADMIN: 'clinic_admin',
-  DOCTOR: 'doctor',
-  LAB_ASSISTANT: 'lab_assistant',
-} as const
+  SUPER_ADMIN: "super_admin",
+  DOCTOR: "doctor",
+} as const;
 
-export type UserRole = (typeof ROLES)[keyof typeof ROLES]
+export type UserRole = (typeof ROLES)[keyof typeof ROLES];
 
 export const ROLE_PERMISSIONS = {
-  super_admin: ['all'],
-  clinic_admin: ['patients', 'cases', 'reports', 'settings'],
-  doctor: ['patients', 'cases', 'reports'],
-  lab_assistant: ['cases', 'queue'],
-} as const
+  super_admin: ["all"],
+  doctor: ["patients", "cases", "reports"],
+} as const;
 
 export type Permission =
-  (typeof ROLE_PERMISSIONS)[keyof typeof ROLE_PERMISSIONS][number]
+  (typeof ROLE_PERMISSIONS)[keyof typeof ROLE_PERMISSIONS][number];

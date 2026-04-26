@@ -146,14 +146,14 @@ Base prefix: `/api/v1/patients`
 | POST   | `/patients`      | Yes  | doctor, super_admin | Create patient        |
 | GET    | `/patients`      | Yes  | doctor, super_admin | Paginated list        |
 | GET    | `/patients/{id}` | Yes  | doctor, super_admin | Detail + case history |
-| PATCH  | `/patients/{id}` | Yes  | doctor, super_admin | Update patient        |
+| PUT    | `/patients/{id}` | Yes  | doctor, super_admin | Update patient        |
 
 ### Query params for GET /patients
 
 | Param    | Type | Default | Description                          |
 | -------- | ---- | ------- | ------------------------------------ |
 | `page`   | int  | 1       | Page number                          |
-| `limit`  | int  | 10      | Items per page (max 100)             |
+| `limit`  | int  | 20      | Items per page (max 100)             |
 | `search` | str  | —       | Fuzzy match on fullName or medicalId |
 
 ### POST /patients body
@@ -206,15 +206,14 @@ Base prefix: `/api/v1/patients`
 
 Base prefix: `/api/v1/cases`
 
-| Method | Path                  | Auth         | Description                              |
-| ------ | --------------------- | ------------ | ---------------------------------------- |
-| POST   | `/cases/upload`       | Yes          | Upload image + create case (canonical)   |
-| POST   | `/reports/upload`     | Yes          | Alias for `/cases/upload` — same handler |
-| GET    | `/cases`              | Yes          | Paginated case list with filters         |
-| GET    | `/cases/{id}`         | Yes          | Case detail                              |
-| GET    | `/cases/{id}/status`  | Yes          | Lightweight status poll                  |
-| POST   | `/cases/{id}/approve` | Yes (doctor) | Approve case after review                |
-| POST   | `/cases/{id}/reject`  | Yes (doctor) | Reject case with reason                  |
+| Method | Path                  | Auth         | Description                            |
+| ------ | --------------------- | ------------ | -------------------------------------- |
+| POST   | `/cases/upload`       | Yes          | Upload image + create case (canonical) |
+| GET    | `/cases`              | Yes          | Paginated case list with filters       |
+| GET    | `/cases/{id}`         | Yes          | Case detail                            |
+| GET    | `/cases/{id}/status`  | Yes          | Lightweight status poll                |
+| PATCH  | `/cases/{id}/approve` | Yes (doctor) | Approve case after review              |
+| PATCH  | `/cases/{id}/reject`  | Yes (doctor) | Reject case with reason                |
 
 ### Case Status Lifecycle
 
@@ -262,7 +261,7 @@ Response `data`:
 | Param          | Type         | Default |
 | -------------- | ------------ | ------- |
 | `page`         | int          | 1       |
-| `limit`        | int          | 10      |
+| `limit`        | int          | 20      |
 | `status`       | CaseStatus   | —       |
 | `priorityTier` | PriorityTier | —       |
 
@@ -307,15 +306,23 @@ Response `data`:
 { "status": "CaseStatus", "priorityScore": 0.0 }
 ```
 
-### POST /cases/{id}/approve — no body, response `data`: CaseDetail
+### PATCH /cases/{id}/approve — no body, response `data`:
 
-### POST /cases/{id}/reject body:
+```json
+{ "status": "CaseStatus", "priorityScore": 0.0 }
+```
+
+### PATCH /cases/{id}/reject body:
 
 ```json
 { "reason": "string" }
 ```
 
-Response `data`: CaseDetail
+Response `data`:
+
+```json
+{ "status": "CaseStatus", "priorityScore": 0.0 }
+```
 
 ---
 

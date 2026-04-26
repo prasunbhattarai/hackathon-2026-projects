@@ -56,9 +56,10 @@ def list_cases(
     page: int = Query(default=1, ge=1),
     limit: int = Query(default=20, ge=1, le=100),
     status: CaseStatus | None = Query(default=None),
+    priority_tier: str | None = Query(default=None, alias="priorityTier"),
     patient_id: str | None = Query(default=None),
 ) -> ApiResponse[PaginatedResponse[CaseSummaryOut]]:
-    result = case_service.list_cases(db, current_user, page, limit, status, patient_id)
+    result = case_service.list_cases(db, current_user, page, limit, status, priority_tier, patient_id)
     return ApiResponse.ok(result)
 
 
