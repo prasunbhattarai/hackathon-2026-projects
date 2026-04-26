@@ -5,7 +5,7 @@ from utils.device import get_device
 from preprocessing.transforms import get_transforms
 from loader.resnet import get_model
 from loader.csv_loader import CSVDataset
-from pipeline.trainer import train_epoch, save_model, get_optimizer
+from pipeline.trainer import train_epoch, save_model, get_optimizer, get_num_classes
 from postprocessing.metrics import evaluate
 
 device = get_device()
@@ -22,20 +22,7 @@ val_loader = DataLoader(val_ds, batch_size=32)
 
 
 
-def get_num_classes(dataset):
-    if hasattr(dataset, 'data'):
-        return len(set(dataset.data.iloc[:, 1]))
-    elif hasattr(dataset, 'classes'):
-        return len(dataset.classes)
-    return None
 
-
-def get_class_names(dataset):
-    if hasattr(dataset, 'data'):
-        return sorted(set(dataset.data.iloc[:, 1]))
-    elif hasattr(dataset, 'classes'):
-        return dataset.classes
-    return None
 num_classes = get_num_classes(dataset)
 
 
@@ -58,8 +45,8 @@ for epoch in range(7):
     print(f"Current: {val_loss}, Best: {best}")
     if val_loss < best:
         best = val_loss
-        save_model(model, "hypertensive_and_glaucoma_model.pth")
-        print("Model saved: hypertensive_and_glaucoma_model.pth")
+        save_model(model, "models/hypertensive_and_glaucoma_model.pth")
+        print("Model saved: models/hypertensive_and_glaucoma_model.pth")
 
     print(f"\n--- Epoch {epoch+1} ---")
     print(f"Train Loss: {train_loss:.4f}")
