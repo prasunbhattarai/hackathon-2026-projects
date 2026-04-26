@@ -59,6 +59,40 @@ class GenerateReportRequest(BaseModel):
     reportType: ReportType = ReportType.DOCTOR
 
 
+class AnalysisResultOut(BaseModel):
+    id: str
+    caseId: str
+    dr: dict
+    glaucoma: dict
+    hypertensiveRetinopathy: dict
+    finalDecision: str | None
+    recommendation: str | None
+    ragJustification: str | None
+    heatmapUrl: str | None
+    decisionConfidence: str | None
+    createdAt: str
+
+
+class GeneralReportOut(BaseModel):
+    """Combined case detail + analysis result — consumed by the frontend GeneralReport type."""
+    id: str
+    patientId: str
+    clinicId: str
+    submittedBy: str
+    imageUrl: str
+    imageQuality: str
+    status: str
+    priorityScore: float
+    priorityTier: str
+    createdAt: str
+    updatedAt: str
+    analysisResult: AnalysisResultOut
+
+
+class ShareReportRequest(BaseModel):
+    email: str
+
+
 class ReportOut(BaseModel):
     id: str
     caseId: str

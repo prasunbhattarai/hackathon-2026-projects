@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import importlib
 import json
 import logging
@@ -12,6 +13,390 @@ from urllib.request import urlopen
 
 from app.core.config import get_settings
 from app.schemas.enums import DecisionConfidence, DRStatus, ImageQuality, RiskLevel
+
+logger = logging.getLogger(__name__)
+
+_ALLOWED_QUALITY_VALUES = {
+    ImageQuality.GOOD.value,
+    ImageQuality.BLURRY.value,
+    ImageQuality.POOR_LIGHTING.value,
+    ImageQuality.OVEREXPOSED.value,
+    ImageQuality.NON_FUNDUS.value,
+}
+
+_DR_SEVERITY_MAP = {
+    "no_dr": DRStatus.NONE.value,
+    "none": DRStatus.NONE.value,
+    "mild": DRStatus.MILD.value,
+    "moderate": DRStatus.MODERATE.value,
+    "severe": DRStatus.SEVERE.value,
+    "pdr": DRStatus.PDR.value,
+}
+
+
+class AIIntegrationError(RuntimeError):
+    """Raised when backend cannot execute AI pipeline."""
+
+
+class AIQualityRejectedError(RuntimeError):
+    """Raised when quality gate rejects an uploaded image."""
+
+    def __init__(self, image_quality: str, reason: str | None = None) -> None:
+        self.image_quality = image_quality
+        self.reason = reason or "Image failed quality gate"
+        super().__init__(self.reason)
+
+
+def _add_ai_paths() -> None:
+    """Make AI layer importable from backend worker process."""
+    src_root = Path(__file__).resolve().parents[3]
+    ai_root = src_root / "ai"
+    for path in (src_root, ai_root):
+        as_str = str(path)
+        if as_str not in sys.path:
+            sys.path.insert(0, as_str)
+
+
+def _safe_float(value: Any, default: float = 0.0) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _clamp01(value: float) -> float:
+    return max(0.0, min(1.0, value))
+
+
+def _normalize_risk(value: Any) -> str:
+    raw = str(value or RiskLevel.LOW.value).strip().lower()
+    if raw == "high":
+        return RiskLevel.HIGH.value
+    if raw == "medium":
+        return RiskLevel.MEDIUM.value
+    return RiskLevel.LOW.value
+
+
+def _normalize_dr_status(value: Any) -> str:
+    raw = str(value or "No_DR").strip().replace("-", "_").replace(" ", "_").lower()
+    return _DR_SEVERITY_MAP.get(raw, DRStatus.NONE.value)
+
+
+def _quality_result_from_raw(raw: Any) -> tuple[bool, str, str | None]:
+    """
+    Normalize output from quality gate callable.
+
+    Supported shapes:
+      - bool
+      - dict with keys like accepted/is_valid/is_fundus + image_quality + reason
+      - string image_quality
+    """
+    if isinstance(raw, bool):
+        return raw, (ImageQuality.GOOD.value if raw else ImageQuality.BLURRY.value), None
+
+    if isinstance(raw, str):
+        quality = raw.strip().lower()
+        if quality not in _ALLOWED_QUALITY_VALUES:
+            quality = ImageQuality.BLURRY.value
+        return quality == ImageQuality.GOOD.value, quality, None
+
+    if isinstance(raw, dict):
+        accepted = bool(
+            raw.get("accepted", raw.get("is_valid", raw.get("is_fundus", True)))
+        )
+        quality = str(
+            raw.get("image_quality", raw.get("quality", ImageQuality.GOOD.value if accepted else ImageQuality.BLURRY.value))
+        ).strip().lower()
+        if quality not in _ALLOWED_QUALITY_VALUES:
+            quality = ImageQuality.GOOD.value if accepted else ImageQuality.BLURRY.value
+        reason = raw.get("reason") or raw.get("message")
+        reason_text = str(reason) if reason else None
+        return accepted, quality, reason_text
+
+    return True, ImageQuality.GOOD.value, None
+
+
+def _run_quality_gate(image_path: Path) -> tuple[bool, str, str | None]:
+    settings = get_settings()
+    if not settings.AI_ENABLE_QUALITY_GATE:
+        return True, ImageQuality.GOOD.value, None
+
+    module_name = settings.AI_QUALITY_GATE_MODULE.strip()
+    function_name = settings.AI_QUALITY_GATE_FUNCTION.strip()
+    if not module_name or not function_name:
+        return True, ImageQuality.GOOD.value, None
+
+    _add_ai_paths()
+
+    module = None
+    import_errors: list[str] = []
+    for name in (module_name, f"ai.{module_name}"):
+        try:
+            module = importlib.import_module(name)
+            break
+        except Exception as exc:  # pragma: no cover - import diagnostics
+            import_errors.append(f"{name}: {exc}")
+
+    if module is None:
+        logger.info(
+            "Quality gate not available yet (%s). Falling back to accept-all.",
+            " | ".join(import_errors),
+        )
+        return True, ImageQuality.GOOD.value, None
+
+    checker = getattr(module, function_name, None)
+    if checker is None:
+        logger.info(
+            "Quality gate function %s.%s not found yet. Falling back to accept-all.",
+            module.__name__,
+            function_name,
+        )
+        return True, ImageQuality.GOOD.value, None
+
+    raw_result = checker(image_path)
+    return _quality_result_from_raw(raw_result)
+
+
+def _download_image_to_temp(image_url: str) -> Path:
+    parsed = urlparse(image_url)
+    suffix = Path(parsed.path).suffix or ".jpg"
+
+    with urlopen(image_url, timeout=30) as response:
+        payload = response.read()
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
+        temp_file.write(payload)
+        return Path(temp_file.name)
+
+
+def _run_prediction(image_path: Path) -> dict[str, Any]:
+    """
+    Call the AI layer's run_full_pipeline and return the full response dict.
+
+    Expected response shape (from inference.inference_service.run_full_pipeline):
+    {
+        "prediction": {
+            "DR":       {"probability": float, "severity_distribution": {...}, "predicted_severity": str},
+            "Glaucoma": {"probability": float, "predicted_risk": str},
+            "HR":       {"probability": float, "predicted_risk": str},
+            "heatmap":  {"type": str, "image_base64": str}   # base64 JPEG, may be empty
+        },
+        "doctor_report": {
+            "primary_diagnosis":    {"condition": str, "confidence_score": float, "confidence_level": str, "margin_vs_next": float},
+            "clinical_interpretation": [str, ...],
+            "suggested_follow_up":     [str, ...]
+        },
+        "patient_report": {
+            "summary":             str,
+            "possible_conditions": [str, ...],
+            "what_this_means":     str,
+            "next_steps":          str,
+            "urgency":             "low" | "medium" | "high"
+        }
+    }
+    """
+    _add_ai_paths()
+    try:
+        from inference.inference_service import run_full_pipeline
+    except Exception as exc:
+        raise AIIntegrationError(f"Could not import AI inference service: {exc}") from exc
+
+    try:
+        result = run_full_pipeline(image_path)
+    except Exception as exc:
+        raise AIIntegrationError(f"AI pipeline failed: {exc}") from exc
+
+    if not isinstance(result, dict):
+        raise AIIntegrationError("AI pipeline returned invalid payload")
+
+    return result
+
+
+def _upload_heatmap_base64(heatmap_b64: str) -> str | None:
+    """Decode a base64 heatmap and upload to Cloudinary. Returns secure_url or None."""
+    if not heatmap_b64:
+        return None
+    try:
+        heatmap_bytes = base64.b64decode(heatmap_b64)
+    except Exception as exc:
+        logger.warning("Heatmap base64 decode failed: %s", exc)
+        return None
+    try:
+        from app.utils.cloudinary_client import upload_bytes_as_image
+        result = upload_bytes_as_image(heatmap_bytes, folder="fundusai/heatmaps")
+        return result.get("secure_url")
+    except Exception as exc:
+        logger.warning("Heatmap Cloudinary upload failed: %s", exc)
+        return None
+
+
+def _choose_decision_confidence(dr_conf: float, glaucoma_conf: float, hr_conf: float) -> str:
+    confidence = max(dr_conf, glaucoma_conf, hr_conf)
+    if confidence >= 0.8:
+        return DecisionConfidence.CLEAR.value
+    if confidence >= 0.6:
+        return DecisionConfidence.SUSPICIOUS.value
+    return DecisionConfidence.UNCERTAIN.value
+
+
+def _map_ai_confidence(confidence_level: str, dr_conf: float, glaucoma_conf: float, hr_conf: float) -> str:
+    """Map AI's confidence_level string to DecisionConfidence enum, with fallback."""
+    level = (confidence_level or "").strip().lower()
+    if level == "high":
+        return DecisionConfidence.CLEAR.value
+    if level in ("moderate", "medium"):
+        return DecisionConfidence.SUSPICIOUS.value
+    if level == "low":
+        return DecisionConfidence.UNCERTAIN.value
+    # Fallback: derive from max probability
+    return _choose_decision_confidence(dr_conf, glaucoma_conf, hr_conf)
+
+
+def _default_decision(dr_status: str, glaucoma_risk: str, hr_risk: str) -> tuple[str, str]:
+    if dr_status in (DRStatus.SEVERE.value, DRStatus.PDR.value):
+        return (
+            "High risk - immediate specialist review required",
+            "Urgent ophthalmology referral recommended due to advanced DR findings.",
+        )
+    if glaucoma_risk == RiskLevel.HIGH.value:
+        return (
+            "Elevated glaucoma risk detected",
+            "Glaucoma screening and intraocular pressure measurement are advised.",
+        )
+    if hr_risk == RiskLevel.HIGH.value:
+        return (
+            "Elevated hypertensive retinopathy risk detected",
+            "Systemic blood pressure review and retina follow-up are advised.",
+        )
+    return (
+        "No severe pathology detected",
+        "Routine clinical follow-up is recommended.",
+    )
+
+
+def run_backend_ai_pipeline(image_url: str) -> dict[str, Any]:
+    """
+    Run full backend-side AI orchestration.
+
+    Flow:
+        1. Download image from Cloudinary to temp file
+        2. Optional pre-prediction quality gate (pluggable module, accept-all fallback)
+        3. Run AI full pipeline (prediction + doctor report + patient report via Gemini)
+        4. Post-prediction non-fundus gate (probability threshold check)
+        5. Decode + upload heatmap base64 to Cloudinary
+        6. Return normalized payload for AnalysisResult persistence and report generation
+    """
+    settings = get_settings()
+    temp_path = _download_image_to_temp(image_url)
+    try:
+        # ── Pre-prediction quality gate (optional pluggable module) ───────────
+        accepted, image_quality, quality_reason = _run_quality_gate(temp_path)
+        if not accepted:
+            raise AIQualityRejectedError(image_quality=image_quality, reason=quality_reason)
+
+        # ── AI full pipeline ─────────────────────────────────────────────────
+        raw = _run_prediction(temp_path)
+
+        # ── Parse prediction section ─────────────────────────────────────────
+        prediction = raw.get("prediction", {})
+        dr_section = prediction.get("DR", {})
+        glaucoma_section = prediction.get("Glaucoma", {})
+        hr_section = prediction.get("HR", {})
+        heatmap_section = prediction.get("heatmap", {})
+
+        dr_status = _normalize_dr_status(dr_section.get("predicted_severity"))
+        dr_conf = _clamp01(_safe_float(dr_section.get("probability"), 0.0))
+
+        glaucoma_risk = _normalize_risk(glaucoma_section.get("predicted_risk"))
+        glaucoma_conf = _clamp01(_safe_float(glaucoma_section.get("probability"), 0.0))
+
+        hr_risk = _normalize_risk(hr_section.get("predicted_risk"))
+        hr_conf = _clamp01(_safe_float(hr_section.get("probability"), 0.0))
+
+        # ── Post-prediction non-fundus gate ───────────────────────────────────
+        # If ALL three disease probabilities are below the threshold, the image
+        # is almost certainly not a retinal fundus image (e.g. a car photo scores
+        # near-zero on all classifiers).
+        threshold = settings.AI_NON_FUNDUS_THRESHOLD
+        if dr_conf < threshold and glaucoma_conf < threshold and hr_conf < threshold:
+            raise AIQualityRejectedError(
+                image_quality=ImageQuality.NON_FUNDUS.value,
+                reason=(
+                    f"Non-fundus image detected: all disease probabilities below "
+                    f"{threshold:.0%} "
+                    f"(DR={dr_conf:.3f}, Glaucoma={glaucoma_conf:.3f}, HR={hr_conf:.3f})"
+                ),
+            )
+
+        # ── Doctor report (from AI layer / Gemini) ────────────────────────────
+        doctor_report = raw.get("doctor_report", {})
+        primary_diag = doctor_report.get("primary_diagnosis", {})
+        clinical_interp: list[str] = doctor_report.get("clinical_interpretation", [])
+        follow_up: list[str] = doctor_report.get("suggested_follow_up", [])
+
+        fallback_decision, fallback_recommendation = _default_decision(dr_status, glaucoma_risk, hr_risk)
+
+        # final_decision: primary condition name from AI (e.g. "Diabetic Retinopathy")
+        final_decision = str(primary_diag.get("condition") or fallback_decision)
+
+        # recommendation: AI follow-up bullets joined, with fallback
+        recommendation = (
+            "\n".join(f"• {item}" for item in follow_up)
+            if follow_up
+            else fallback_recommendation
+        )
+
+        # rag_justification: AI clinical interpretation bullets joined, with fallback
+        rag_justification = (
+            "\n".join(f"• {item}" for item in clinical_interp)
+            if clinical_interp
+            else "Model-based assessment generated from DR, glaucoma, and HR classifiers."
+        )
+
+        # decision_confidence: mapped from AI's confidence_level
+        confidence_level = str(primary_diag.get("confidence_level") or "")
+        decision_confidence = _map_ai_confidence(confidence_level, dr_conf, glaucoma_conf, hr_conf)
+
+        # ── Patient report (from AI layer / Gemini) ───────────────────────────
+        patient_report: dict[str, Any] | None = raw.get("patient_report") or None
+
+        # ── Heatmap: decode base64 and upload to Cloudinary ───────────────────
+        heatmap_url = _upload_heatmap_base64(heatmap_section.get("image_base64", ""))
+
+        return {
+            "image_quality": image_quality,
+            "dr_status": dr_status,
+            "dr_confidence": dr_conf,
+            "dr_severity_level": dr_status,
+            "glaucoma_risk": glaucoma_risk,
+            "glaucoma_confidence": glaucoma_conf,
+            "hr_risk": hr_risk,
+            "hr_confidence": hr_conf,
+            "final_decision": final_decision,
+            "recommendation": recommendation,
+            "rag_justification": rag_justification,
+            "decision_confidence": decision_confidence,
+            "heatmap_url": heatmap_url,
+            "raw_ai_output": raw,
+            "patient_report_json": patient_report,
+        }
+    except AIQualityRejectedError:
+        raise
+    except AIIntegrationError:
+        raise
+    except Exception as exc:
+        raise AIIntegrationError(f"Unexpected AI pipeline failure: {exc}") from exc
+    finally:
+        try:
+            temp_path.unlink(missing_ok=True)
+        except Exception:
+            logger.warning("Could not remove temp inference file: %s", temp_path)
+
+
+def serialize_for_logs(payload: dict[str, Any]) -> str:
+    safe_payload = {k: v for k, v in payload.items() if k not in {"raw_ai_output"}}
+    return json.dumps(safe_payload, default=str)
+
 
 logger = logging.getLogger(__name__)
 
