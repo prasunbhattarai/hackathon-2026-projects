@@ -22,3 +22,5 @@ def get_model(num_classes, freeze_backbone=True, fine_tune_layers=None, dropout=
         model.fc = nn.Linear(model.fc.in_features, num_classes)
 
     return model
+
+
