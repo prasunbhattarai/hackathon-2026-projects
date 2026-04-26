@@ -1,0 +1,91 @@
+"""
+Analysis result service.
+
+Provides read access to AnalysisResult rows (created by the Celery worker).
+Doctors and admins can retrieve analysis data once a case reaches AWAITING_REVIEW.
+"""
+
+from __future__ import annotations
+
+import uuid
+
+from fastapi import HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.models.analysis_result import AnalysisResult
+from app.models.case import Case
+from app.models.user import User
+from app.schemas.analysis import AnalysisResultOut, DRResultOut, DiseaseResultOut
+from app.schemas.enums import CaseStatus, DecisionConfidence, DRStatus, RiskLevel, UserRole
+
+# DR severity → int scale used by the schema (1=None … 4=Severe/PDR)
+_DR_SEVERITY_INT: dict[str, int] = {
+    DRStatus.NONE.value: 1,
+    DRStatus.MILD.value: 2,
+    DRStatus.MODERATE.value: 3,
+    DRStatus.SEVERE.value: 4,
+    DRStatus.PDR.value: 4,
+}
+
+
+def _assert_case_access(user: User, case: Case) -> None:
+    if user.role == UserRole.SUPER_ADMIN.value:
+        return
+    if user.clinic_id != case.clinic_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
+
+def get_analysis_result(
+    db: Session,
+    user: User,
+    case_id: str,
+) -> AnalysisResultOut:
+    """Return the analysis result for a case. Requires the case to be past PROCESSING."""
+    case = db.get(Case, uuid.UUID(case_id))
+    if case is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+
+    _assert_case_access(user, case)
+
+    if case.status == CaseStatus.PROCESSING.value:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Analysis is still in progress. Poll GET /cases/{id}/status.",
+        )
+
+    result = db.execute(
+        select(AnalysisResult).where(AnalysisResult.case_id == uuid.UUID(case_id))
+    ).scalar_one_or_none()
+
+    if result is None:
+        # Case finished processing but no result row (e.g. FAILED / QUALITY_FAILED)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No analysis result available for this case",
+        )
+
+    return AnalysisResultOut(
+        id=str(result.id),
+        caseId=str(result.case_id),
+        dr=DRResultOut(
+            status=DRStatus(result.dr_status) if result.dr_status else DRStatus.NONE,
+            confidence=result.dr_confidence or 0.0,
+            severityLevel=_DR_SEVERITY_INT.get(result.dr_status or DRStatus.NONE.value, 1),
+        ),
+        glaucoma=DiseaseResultOut(
+            risk=RiskLevel(result.glaucoma_risk) if result.glaucoma_risk else RiskLevel.LOW,
+            confidence=result.glaucoma_confidence or 0.0,
+        ),
+        hypertensiveRetinopathy=DiseaseResultOut(
+            risk=RiskLevel(result.hr_risk) if result.hr_risk else RiskLevel.LOW,
+            confidence=result.hr_confidence or 0.0,
+        ),
+        finalDecision=result.final_decision or "",
+        recommendation=result.recommendation or "",
+        ragJustification=result.rag_justification or "",
+        heatmapUrl=result.heatmap_url,
+        severityLevel=_DR_SEVERITY_INT.get(result.dr_severity_level or DRStatus.NONE.value, 1),
+        decisionConfidence=DecisionConfidence(result.decision_confidence) if result.decision_confidence else DecisionConfidence.UNCERTAIN,
+        createdAt=result.created_at.isoformat(),
+    )

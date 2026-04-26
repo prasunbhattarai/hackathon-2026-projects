@@ -1,5 +1,6 @@
-from app.schemas.health import HealthCheckResponse
+from app.schemas.base import ApiResponse
+from app.schemas.health import HealthData
 
 
-def get_health_status() -> HealthCheckResponse:
-    return HealthCheckResponse(status="ok", message="FastAPI server is running")
+def get_health_status() -> ApiResponse[HealthData]:
+    return ApiResponse.ok(HealthData(status="ok", message="FastAPI server is running"))
