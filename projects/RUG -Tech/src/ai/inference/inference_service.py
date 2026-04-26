@@ -1,8 +1,9 @@
 from pathlib import Path
 from typing import Dict
+import json
 
-from pipeline.predict_pipeline import predict_image
-from report import (
+from pipeline.predict_pipeline import TEST_IMAGE, predict_image
+from .report import (
     get_primary_diagnosis,
     generate_doctor_sections,
     generate_patient_report
@@ -38,3 +39,8 @@ def run_full_pipeline(image_path: Path) -> Dict:
         "doctor_report": doctor_report,
         "patient_report": patient_report,
     }
+
+
+if __name__ == "__main__":
+	result = run_full_pipeline(TEST_IMAGE)
+	print(json.dumps(result, indent=2))
