@@ -1,4 +1,18 @@
 import torch
+import torch.optim as optim
+
+
+def get_optimizer(model, fine_tune_layers, lr=1e-3, weight_decay=0):
+    param_groups = []
+
+    if fine_tune_layers:
+        for layer_name in fine_tune_layers:
+            if hasattr(model, layer_name):
+                param_groups.extend(list(getattr(model, layer_name).parameters()))
+
+    param_groups.extend(list(model.fc.parameters()))
+
+    return optim.Adam(param_groups, lr=lr, weight_decay=weight_decay)
 
 def train_epoch(model, loader, criterion, optimizer, device):
     model.train()
