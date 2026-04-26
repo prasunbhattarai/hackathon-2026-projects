@@ -7,6 +7,7 @@ import { Input } from '@/Components/ui/Input'
 import { Button } from '@/Components/ui/Button'
 import { ROUTES } from '@/constants/routes'
 import { useCreatePatient } from '@/features/patients/hooks/useCreatePatient'
+import { useAuthStore } from '@/store/authStore'
 
 function validateName(v: string) {
   return v.trim().length < 2 ? 'Name must be at least 2 characters' : null
@@ -30,6 +31,7 @@ function validateMedicalId(v: string) {
 export const PatientCreateForm = () => {
   const router = useRouter()
   const { mutate, isPending } = useCreatePatient()
+  const user = useAuthStore((s) => s.user)
 
   const [fullName, setFullName] = useState('')
   const [dateOfBirth, setDateOfBirth] = useState('')
@@ -38,6 +40,7 @@ export const PatientCreateForm = () => {
   const [medicalId, setMedicalId] = useState('')
 
   const [errors, setErrors] = useState<Record<string, string | null>>({})
+  const hasClinicAccess = Boolean(user?.clinicId)
 
   const setFieldError = (field: string, val: string | null) =>
     setErrors((p) => ({ ...p, [field]: val }))
@@ -52,6 +55,7 @@ export const PatientCreateForm = () => {
     }
     setErrors(errs)
     if (Object.values(errs).some(Boolean)) return
+    if (!hasClinicAccess) return
 
     mutate({ fullName, dateOfBirth, gender, contact, medicalId })
   }
@@ -119,7 +123,13 @@ export const PatientCreateForm = () => {
       </div>
 
       <div className="flex items-center gap-3 mt-8">
-        <Button type="submit" variant="primary" size="lg" loading={isPending}>
+        <Button
+          type="submit"
+          variant="primary"
+          size="lg"
+          loading={isPending}
+          disabled={!hasClinicAccess}
+        >
           Register Patient
         </Button>
         <Button
@@ -131,6 +141,12 @@ export const PatientCreateForm = () => {
           Cancel
         </Button>
       </div>
+      {!hasClinicAccess && (
+        <p className="mt-4 text-sm text-[var(--sev-warning)]">
+          Your account is not linked to a clinic yet, so patient registration is disabled.
+          Contact an administrator to assign your clinic.
+        </p>
+      )}
     </form>
   )
 }

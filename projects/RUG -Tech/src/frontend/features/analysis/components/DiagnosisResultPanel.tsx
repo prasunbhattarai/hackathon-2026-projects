@@ -21,10 +21,11 @@ export interface DiagnosisResultPanelProps {
   className?: string
 }
 
-function decisionBadgeVariant(severity: number) {
-  if (severity >= 4) return 'critical' as const
-  if (severity >= 3) return 'high' as const
-  if (severity >= 2) return 'medium' as const
+function decisionBadgeVariant(severity?: number) {
+  const s = severity ?? 0
+  if (s >= 4) return 'critical' as const
+  if (s >= 3) return 'high' as const
+  if (s >= 2) return 'medium' as const
   return 'low' as const
 }
 
@@ -48,7 +49,7 @@ export const DiagnosisResultPanel = ({
               {analysis.finalDecision}
             </h2>
             <Badge variant={decisionBadgeVariant(analysis.severityLevel)} size="md">
-              Level {analysis.severityLevel}
+              Level {analysis.severityLevel ?? '—'}
             </Badge>
           </div>
           <p className="text-xs text-[var(--text-muted)] mt-2 font-condensed">
@@ -83,12 +84,12 @@ export const DiagnosisResultPanel = ({
       </div>
 
       {/* RAG Justification */}
-      <RAGJustificationCard justification={analysis.ragJustification} />
+      <RAGJustificationCard justification={analysis.ragJustification ?? ''} />
 
       {/* Recommendation */}
       <RecommendationCard
-        recommendation={analysis.recommendation}
-        severityLevel={analysis.severityLevel}
+        recommendation={analysis.recommendation ?? ''}
+        severityLevel={analysis.severityLevel ?? 1}
       />
 
       {/* Action buttons */}

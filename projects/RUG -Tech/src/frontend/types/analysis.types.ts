@@ -9,7 +9,7 @@ export type DecisionConfidence =
 export interface DRResult {
 	status: DRStatus;
 	confidence: number;
-	severityLevel: SeverityLevel;
+	severityLevel?: SeverityLevel;
 }
 
 export interface DiseaseResult {
@@ -20,14 +20,14 @@ export interface DiseaseResult {
 export interface AnalysisResult {
 	id: string;
 	caseId: string;
-	dr: DRResult;
-	glaucoma: DiseaseResult;
-	hypertensiveRetinopathy: DiseaseResult;
-	finalDecision: string;
-	recommendation: string;
-	ragJustification: string;
+	dr: DRResult | Record<string, unknown>;
+	glaucoma: DiseaseResult | Record<string, unknown>;
+	hypertensiveRetinopathy: DiseaseResult | Record<string, unknown>;
+	finalDecision: string | null;
+	recommendation: string | null;
+	ragJustification: string | null;
 	heatmapUrl: string | null;
-	severityLevel: SeverityLevel;
-	decisionConfidence: DecisionConfidence;
+	severityLevel?: SeverityLevel;
+	decisionConfidence: DecisionConfidence | string | null;
 	createdAt: string;
 }

@@ -2,7 +2,6 @@ import { apiGet, apiPost, apiPut } from "@/services/api.client";
 import type { ApiResponse, PaginatedResponse } from "@/types/api.types";
 import type {
   CreatePatientRequest,
-  Patient,
   PatientDetail,
   PatientSummary,
 } from "@/types/patient.types";
@@ -30,14 +29,14 @@ export async function getPatientDetail(
 /** Create a new patient record */
 export async function createPatient(
   data: CreatePatientRequest,
-): Promise<ApiResponse<Patient>> {
-  return apiPost<Patient>("/patients", data);
+): Promise<ApiResponse<PatientDetail>> {
+  return apiPost<PatientDetail>("/patients", data);
 }
 
 /** Update an existing patient's information */
 export async function updatePatient(
   id: string,
   data: Partial<CreatePatientRequest>,
-): Promise<ApiResponse<Patient>> {
-  return apiPut<Patient>(`/patients/${id}`, data);
+): Promise<ApiResponse<PatientDetail>> {
+  return apiPut<PatientDetail>(`/patients/${id}`, data);
 }

@@ -32,6 +32,7 @@ export interface CreatePatientRequest {
 	gender: Gender;
 	contact: string;
 	medicalId: string;
+	clinicId?: string;
 }
 
 export type PatientListResponse = PaginatedResponse<PatientSummary>;

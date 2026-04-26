@@ -17,6 +17,7 @@ Status transitions:
 import logging
 import math
 import uuid
+from pathlib import Path
 
 from fastapi import HTTPException, UploadFile, status
 from sqlalchemy import func, select
@@ -140,7 +141,15 @@ def upload_case(
     settings = get_settings()
 
     # ── validate patient access ────────────────────────────────────────────
-    patient = db.get(Patient, uuid.UUID(patient_id))
+    try:
+        patient_uuid = uuid.UUID(patient_id)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Invalid patient_id (must be a UUID)",
+        )
+
+    patient = db.get(Patient, patient_uuid)
     if patient is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
     clinic_id = _clinic_filter(user)
@@ -149,11 +158,20 @@ def upload_case(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
     # ── validate image mime type ────────────────────────────────────────────
-    content_type = image.content_type or ""
-    if content_type not in _ALLOWED_MIME:
+    content_type = (image.content_type or "").strip().lower()
+    # Some clients send `image/jpg` or omit content-type for FormData blobs.
+    normalized = "image/jpeg" if content_type == "image/jpg" else content_type
+    if not normalized:
+        filename = (image.filename or "").lower()
+        if filename.endswith((".jpg", ".jpeg")):
+            normalized = "image/jpeg"
+        elif filename.endswith(".png"):
+            normalized = "image/png"
+
+    if normalized not in _ALLOWED_MIME:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Invalid image type '{content_type}'. Allowed: {', '.join(_ALLOWED_MIME)}",
+            detail=f"Invalid image type '{content_type or 'unknown'}'. Allowed: {', '.join(sorted(_ALLOWED_MIME))}",
         )
 
     # ── validate image size ─────────────────────────────────────────────────
@@ -166,17 +184,20 @@ def upload_case(
         )
     image.file.seek(0)
 
-    # ── upload to Cloudinary ───────────────────────────────────────────────
+    # ── store locally (avoid Cloudinary dependency) ────────────────────────
     try:
-        from app.utils.cloudinary_client import upload_image
-        upload_result = upload_image(image, folder="fundusai/fundus")
-        image_url = upload_result["secure_url"]
-        image_public_id = upload_result.get("public_id")
+        from app.utils.local_storage import save_upload_image
+
+        static_root = Path(__file__).resolve().parents[1] / "static"
+        rel_url, _path = save_upload_image(image, target_dir=static_root / "uploads")
+        # Use absolute URL so the Celery worker can download it consistently.
+        image_url = f"{settings.PUBLIC_BASE_URL.rstrip('/')}{rel_url}"
+        image_public_id = None
     except Exception as exc:
-        logger.error("Cloudinary upload failed: %s", exc, exc_info=True)
+        logger.error("Local image save failed: %s", exc, exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Image storage service unavailable. Please try again.",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to store uploaded image. Please try again.",
         )
 
     # ── create case row ────────────────────────────────────────────────────

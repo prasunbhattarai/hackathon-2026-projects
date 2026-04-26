@@ -56,6 +56,17 @@ const qualityConfig: Record<
       'Adjust the camera angle slightly to avoid direct reflection',
     ],
   },
+  non_fundus: {
+    title: 'Non-fundus image detected',
+    icon: AlertTriangle,
+    color: 'var(--sev-high)',
+    tips: [
+      'Ensure the retina (fundus) is centered and clearly visible',
+      'Remove obstructions like eyelids/eyelashes from the field of view',
+      'Reposition the camera to capture the posterior pole',
+      'Confirm the image is taken using the fundus camera mode',
+    ],
+  },
 }
 
 export const ImageQualityFeedback = ({

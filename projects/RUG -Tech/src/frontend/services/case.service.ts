@@ -1,4 +1,4 @@
-import { apiGet, apiPatch, apiPost, apiUpload } from "@/services/api.client";
+import { apiGet, apiPatch, apiUpload } from "@/services/api.client";
 import type { ApiResponse, PaginatedResponse } from "@/types/api.types";
 import type {
   CaseDetail,
@@ -33,7 +33,7 @@ export async function uploadCase(data: {
   image: File;
 }): Promise<ApiResponse<{ caseId: string; status: string; taskId: string }>> {
   const formData = new FormData();
-  formData.append("patientId", data.patientId);
+  formData.append("patient_id", data.patientId);
   formData.append("image", data.image);
   return apiUpload<{ caseId: string; status: string; taskId: string }>(
     "/cases/upload",

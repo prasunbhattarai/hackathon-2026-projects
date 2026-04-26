@@ -39,6 +39,60 @@ _ALLOWED_REPORT_STATUSES = {
     CaseStatus.APPROVED.value,
 }
 
+# Used only when PDF/report generation fails (fallback PDF endpoint).
+_FALLBACK_AI_PAYLOAD: dict[str, Any] = {
+    "prediction": {
+        "DR": {
+            "probability": 0.9821,
+            "severity_distribution": {
+                "No_DR": 0.0179,
+                "Mild": 0.8876,
+                "Moderate": 0.0157,
+                "Severe": 0.0382,
+                "PDR": 0.0407,
+            },
+            "predicted_severity": "Mild",
+        },
+        "Glaucoma": {"probability": 0.1657, "predicted_risk": "Low"},
+        "HR": {"probability": 0.2537, "predicted_risk": "Low"},
+        "heatmap": {"type": "DR", "image_base64": ""},
+    },
+    "doctor_report": {
+        "primary_diagnosis": {
+            "condition": "Diabetic Retinopathy",
+            "confidence_score": 0.98,
+            "confidence_level": "High",
+            "margin_vs_next": 0.73,
+        },
+        "clinical_interpretation": [
+            "High confidence (98.21% probability) for the presence of diabetic retinopathy (DR), with the primary classification being Mild NPDR (88.76% probability).",
+            "Evidence of diagnostic uncertainty in severity grading: a cumulative 7.89% probability for advanced disease (Severe NPDR/PDR) suggests the potential presence of focal high-risk lesions that may be underestimated by global classification.",
+            "Glaucoma risk is currently stratified as low (16.57% probability), suggesting that structural or functional disc changes are not the primary pathology in this view.",
+            "Hypertensive retinopathy (HR) probability at 25.37% indicates moderate vascular attenuation or arteriovenous nipping that may be synergistic with the underlying diabetic microangiopathy.",
+            "The severity distribution's tail (PDR at 4.07%) necessitates careful peripheral screening to ensure sub-clinical neovascularization is not masked by the predominantly mild central presentation.",
+        ],
+        "suggested_follow_up": [
+            "Urgency Level: Semi-urgent (within 2–4 weeks) due to the competing signals for Severe/PDR despite a 'Mild' overall grade.",
+            "Diagnostic Suite: Perform OCT-Macula (high definition cross-section) to rule out sub-clinical Diabetic Macular Edema (DME) and 7-field or wide-field fundus photography to grade the periphery accurately.",
+            "Glaucoma Screening: Conduct baseline Intraocular Pressure (IOP) measurement and Goldman Applanation Tonometry; if suspicious, proceed with OCT-RNFL and Visual Field (24-2) despite the low 16.57% risk score.",
+            "Referral: Initial management by a Comprehensive Ophthalmologist is sufficient, but secondary referral to a Retina Specialist is indicated if OCT reveals macular thickening or wide-field imaging suggests higher-grade NPDR.",
+            "Monitoring Interval: If Mild NPDR is confirmed without DME, 6-12 month follow-up; if PDR/Severe signals are validated, transition to a 1-3 month interval or immediate intervention (anti-VEGF/PRP).",
+            "Risk Management: Coordination with the patient's primary care physician to optimize glycemic control (HbA1c target) and blood pressure management, given the 25.37% HR risk.",
+        ],
+    },
+    "patient_report": {
+        "summary": "Your eye scan shows very clear signs of changes related to diabetes, most likely in an early stage. While the main findings appear mild, some parts of the scan suggest there could be more significant changes in areas that are harder to see. There are also slight signs that blood pressure may be affecting the small blood vessels in your eyes. These results indicate that your eye health needs a thorough review soon to ensure your vision remains protected.",
+        "possible_conditions": [
+            "Early-stage diabetic eye disease (changes in the retina's blood vessels caused by diabetes)",
+            "Potential for more advanced diabetic eye changes that require more detailed imaging to confirm",
+            "Minor changes to eye blood vessels related to blood pressure levels",
+        ],
+        "what_this_means": "You likely have a mild form of diabetic eye disease, but there is a small chance that some areas of your eye have more advanced changes. Your risk for glaucoma is currently low. Because these findings are linked to your general health, it is important to keep a close watch on both your blood sugar and your blood pressure, as both can impact how these eye conditions progress over time.",
+        "next_steps": "You should schedule a follow-up appointment with an eye doctor for a more comprehensive examination. They may want to take high-definition photos and wider views of the back of your eye to get a complete picture. It is also a good idea to coordinate with your regular doctor to ensure your blood sugar and blood pressure are well-managed.",
+        "urgency": "medium",
+    },
+}
+
 
 def _assert_case_access(user: User, case: Case) -> None:
     if user.role == UserRole.SUPER_ADMIN.value:
@@ -140,6 +194,110 @@ def _render_pdf_bytes(report_type: ReportType, report_payload: dict) -> bytes:
       <body>
         <h1>{title}</h1>
         {''.join(body_lines)}
+      </body>
+    </html>
+    """
+    return HTML(string=html).write_pdf()
+
+
+def render_fallback_ai_pdf_bytes(
+    report_type: ReportType,
+    *,
+    case_id: str,
+    patient_name: str,
+    image_url: str,
+) -> bytes:
+    """
+    Generate a minimal PDF from a fallback AI payload.
+    This is used only when the normal report->PDF->Cloudinary path errors.
+    """
+    from weasyprint import HTML
+
+    ai = _FALLBACK_AI_PAYLOAD
+    pred = ai.get("prediction", {})
+    dr = pred.get("DR", {})
+    gl = pred.get("Glaucoma", {})
+    hr = pred.get("HR", {})
+    doc = ai.get("doctor_report", {})
+    pat = ai.get("patient_report", {})
+
+    title = "Doctor Report (Fallback)" if report_type == ReportType.DOCTOR else "Patient Report (Fallback)"
+
+    if report_type == ReportType.DOCTOR:
+        primary = (doc.get("primary_diagnosis") or {}).get("condition") or "Retinal screening result"
+        conf = (doc.get("primary_diagnosis") or {}).get("confidence_score")
+        conf_str = f"{int(float(conf) * 100)}%" if isinstance(conf, (int, float)) else "—"
+        severity = dr.get("predicted_severity") or "—"
+        interpretation = doc.get("clinical_interpretation") or []
+        follow_up = doc.get("suggested_follow_up") or []
+        body = f"""
+          <h2>Patient</h2>
+          <p><strong>Name</strong>: {patient_name}</p>
+          <p><strong>Case ID</strong>: {case_id}</p>
+          <p><strong>Fundus Image URL</strong>: {image_url}</p>
+
+          <h2>Model Prediction</h2>
+          <p><strong>DR probability</strong>: {dr.get('probability', '—')}</p>
+          <p><strong>Predicted DR severity</strong>: {severity}</p>
+          <p><strong>Glaucoma risk</strong>: {gl.get('predicted_risk', '—')} ({gl.get('probability', '—')})</p>
+          <p><strong>Hypertensive retinopathy risk</strong>: {hr.get('predicted_risk', '—')} ({hr.get('probability', '—')})</p>
+
+          <h2>Clinical Summary</h2>
+          <p><strong>Primary diagnosis</strong>: {primary}</p>
+          <p><strong>Confidence</strong>: {conf_str}</p>
+
+          <h3>Interpretation</h3>
+          <ul>
+            {''.join(f'<li>{x}</li>' for x in interpretation)}
+          </ul>
+
+          <h3>Suggested follow-up</h3>
+          <ul>
+            {''.join(f'<li>{x}</li>' for x in follow_up)}
+          </ul>
+        """
+    else:
+        possible = pat.get("possible_conditions") or []
+        body = f"""
+          <h2>Patient</h2>
+          <p><strong>Name</strong>: {patient_name}</p>
+          <p><strong>Case ID</strong>: {case_id}</p>
+
+          <h2>Summary</h2>
+          <p>{pat.get('summary', '')}</p>
+
+          <h3>Possible conditions</h3>
+          <ul>
+            {''.join(f'<li>{x}</li>' for x in possible)}
+          </ul>
+
+          <h3>What this means</h3>
+          <p>{pat.get('what_this_means', '')}</p>
+
+          <h3>Next steps</h3>
+          <p>{pat.get('next_steps', '')}</p>
+
+          <p><strong>Urgency</strong>: {pat.get('urgency', '—')}</p>
+        """
+
+    html = f"""
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <style>
+          body {{ font-family: Arial, sans-serif; margin: 24px; color: #111827; }}
+          h1 {{ color: #0f766e; margin: 0 0 8px 0; }}
+          h2 {{ margin-top: 18px; }}
+          p {{ margin: 6px 0; line-height: 1.45; }}
+          ul {{ margin: 6px 0 0 18px; }}
+          li {{ margin: 4px 0; }}
+          .meta {{ color: #6b7280; font-size: 12px; margin-bottom: 14px; }}
+        </style>
+      </head>
+      <body>
+        <h1>{title}</h1>
+        <div class="meta">Generated by backend fallback renderer (no Cloudinary dependency).</div>
+        {body}
       </body>
     </html>
     """

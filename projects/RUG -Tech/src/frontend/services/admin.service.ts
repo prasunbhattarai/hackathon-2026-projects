@@ -5,7 +5,7 @@ import type {
   CreateClinicRequest,
   PlatformStats,
 } from '@/types/admin.types'
-import type { User } from '@/types/auth.types'
+import type { User, UserRole } from '@/types/auth.types'
 
 /** Get all clinics */
 export async function getClinics(): Promise<ApiResponse<Clinic[]>> {
@@ -32,7 +32,7 @@ export async function getUsers(
 export async function createUser(data: {
   email: string
   fullName: string
-  role: string
+  role: UserRole
   clinicId?: string
 }): Promise<ApiResponse<User>> {
   return apiPost<User>('/admin/users', data)

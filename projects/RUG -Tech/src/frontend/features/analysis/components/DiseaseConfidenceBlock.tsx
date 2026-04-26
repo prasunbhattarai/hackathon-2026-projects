@@ -8,7 +8,9 @@ import type { DRResult, DiseaseResult } from '@/types/analysis.types'
 
 export interface DiseaseConfidenceBlockProps {
   disease: 'dr' | 'glaucoma' | 'hr'
-  result: DRResult | DiseaseResult
+  // Backend contract guarantees these shapes, but the UI also supports
+  // partial/mock payloads during development.
+  result: (DRResult | DiseaseResult | Record<string, unknown>) | null | undefined
   className?: string
 }
 
@@ -53,13 +55,15 @@ export const DiseaseConfidenceBlock = ({
   const config = diseaseConfig[disease]
   const Icon = config.icon
   const isDR = disease === 'dr'
-  const drResult = isDR ? (result as DRResult) : null
-  const diseaseResult = !isDR ? (result as DiseaseResult) : null
+  const safe = (result ?? {}) as Partial<DRResult & DiseaseResult> & Record<string, unknown>
+  const drResult = isDR ? (safe as Partial<DRResult>) : null
+  const diseaseResult = !isDR ? (safe as Partial<DiseaseResult>) : null
 
-  const statusLabel = isDR ? drResult!.status : diseaseResult!.risk
+  const statusLabel = isDR ? (drResult?.status ?? 'Unknown') : (diseaseResult?.risk ?? 'Unknown')
   const badgeVariant = isDR
-    ? getDRBadgeVariant(drResult!.status)
-    : getRiskBadgeVariant(diseaseResult!.risk)
+    ? getDRBadgeVariant(String(drResult?.status ?? 'Unknown'))
+    : getRiskBadgeVariant(String(diseaseResult?.risk ?? 'Unknown'))
+  const confidence = typeof safe.confidence === 'number' ? safe.confidence : 0
 
   return (
     <div
@@ -85,10 +89,10 @@ export const DiseaseConfidenceBlock = ({
       {/* Confidence bar */}
       <div className="flex items-center gap-3">
         <div className="flex-1">
-          <ConfidenceBar value={result.confidence} showValue={false} />
+          <ConfidenceBar value={confidence} showValue={false} />
         </div>
         <span className="font-mono text-xs text-[var(--text-primary)] w-10 text-right">
-          {(result.confidence * 100).toFixed(0)}%
+          {(confidence * 100).toFixed(0)}%
         </span>
       </div>
     </div>

@@ -25,6 +25,10 @@ class Settings(BaseSettings):
 
     PDF_DOWNLOAD_EXPIRY_SECONDS: int = 3600
 
+    # Base URL for generating absolute links to locally-served assets (e.g. /static/uploads/*).
+    # In dev this should match your backend address.
+    PUBLIC_BASE_URL: str = "http://127.0.0.1:8000"
+
     # AI integration settings (backend orchestrates calls into ../ai)
     AI_ENABLE_QUALITY_GATE: bool = True
     AI_QUALITY_GATE_MODULE: str = "preprocessing.quality"
@@ -33,7 +37,12 @@ class Settings(BaseSettings):
     # below this threshold the image is treated as a non-fundus / ineligible image.
     AI_NON_FUNDUS_THRESHOLD: float = 0.1
 
-    CORS_ORIGINS: list[str] = ["http://localhost:3000"]
+    CORS_ORIGINS: list[str] = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
+    ]
 
     model_config = SettingsConfigDict(
         env_file=".env",
